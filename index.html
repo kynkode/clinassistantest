@@ -1,5 +1,5 @@
 <!-- ========================================== -->
-<!-- FILE 2: index.html (Frontend)              -->
+<!-- FILE: index.html (Frontend with Animated States) -->
 <!-- ========================================== -->
 
 <!DOCTYPE html>
@@ -9,8 +9,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Consultation AI Assistant</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Added html2pdf for PDF generation -->
+  <!-- html2pdf for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    /* Custom Loading Animations */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .animate-shimmer {
+      background: linear-gradient(90deg, rgba(99,102,241,0.2) 0%, rgba(168,85,247,0.8) 50%, rgba(16,185,129,0.2) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite linear;
+    }
+
+    @keyframes wave-bars {
+      0%, 100% { height: 4px; }
+      50% { height: 14px; }
+    }
+    .animate-wave-1 { animation: wave-bars 0.8s infinite ease-in-out 0.0s; }
+    .animate-wave-2 { animation: wave-bars 0.8s infinite ease-in-out 0.15s; }
+    .animate-wave-3 { animation: wave-bars 0.8s infinite ease-in-out 0.3s; }
+    .animate-wave-4 { animation: wave-bars 0.8s infinite ease-in-out 0.45s; }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 12px rgba(99, 102, 241, 0.2); }
+      50% { box-shadow: 0 0 22px rgba(99, 102, 241, 0.6); }
+    }
+    .status-glow {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
 
@@ -20,9 +50,9 @@
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl w-full">
       <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Letterhead & Location Settings</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        <input type="text" id="clinicName" placeholder="Clinic / Hospital Name" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500" value="General Hospital">
-        <input type="text" id="doctorName" placeholder="Provider Name" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500" value="Dr. John Doe">
-        <input type="email" id="patientEmail" placeholder="Patient Email Address" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500">
+        <input type="text" id="clinicName" placeholder="Clinic / Hospital Name" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 transition" value="General Hospital">
+        <input type="text" id="doctorName" placeholder="Provider Name" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 transition" value="Dr. John Doe">
+        <input type="email" id="patientEmail" placeholder="Patient Email Address" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 transition">
       </div>
       <div class="text-xs text-slate-400 font-mono flex items-start sm:items-center gap-2 flex-col sm:flex-row">
         <span>📍 Detected Clinic Location:</span>
@@ -30,47 +60,80 @@
       </div>
     </div>
 
-    <!-- Header & Controls -->
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-      <div class="w-full lg:w-auto">
-        <h1 class="text-2xl font-bold text-indigo-400">Consultation Listener</h1>
-        <p class="text-xs text-slate-400 mt-1 font-mono" id="statusText">Status: Ready to record</p>
+    <!-- Header & Controls with Animated Status Header -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative overflow-hidden">
+      
+      <!-- Top Shimmer Progress Bar (Hidden when idle) -->
+      <div id="progressBarContainer" class="absolute top-0 left-0 w-full h-1 bg-slate-700/50 overflow-hidden hidden">
+        <div class="h-full w-full animate-shimmer"></div>
       </div>
 
+      <div class="w-full lg:w-auto space-y-2">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-2xl font-bold text-indigo-400">Consultation Listener</h1>
+          
+          <!-- Animated Dynamic Badge -->
+          <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-700/80 border border-slate-600 text-slate-300 transition-all duration-300">
+            <span id="statusIcon" class="relative flex h-2.5 w-2.5 items-center justify-center">
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+            </span>
+            <span id="statusBadgeText" class="font-mono text-[11px] uppercase tracking-wider">Ready</span>
+            
+            <!-- Animated Audio Wave Lines (Visible during recording) -->
+            <div id="audioWave" class="hidden flex items-end gap-0.5 h-3 ml-1">
+              <span class="w-0.5 bg-rose-400 animate-wave-1 rounded-full"></span>
+              <span class="w-0.5 bg-rose-400 animate-wave-2 rounded-full"></span>
+              <span class="w-0.5 bg-rose-400 animate-wave-3 rounded-full"></span>
+              <span class="w-0.5 bg-rose-400 animate-wave-4 rounded-full"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Status Text -->
+        <p class="text-xs text-slate-400 font-mono transition-all duration-300 flex items-center gap-2" id="statusText">
+          Status: Ready to record
+        </p>
+      </div>
+
+      <!-- Action Control Buttons -->
       <div class="flex flex-col sm:flex-row flex-wrap gap-3 w-full lg:w-auto justify-start lg:justify-end">
-        <button id="recordBtn" onclick="startRecording()" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-xl transition shadow-lg active:scale-95 text-sm">
-          🎙️ Record
+        <button id="recordBtn" onclick="startRecording()" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-xl transition shadow-lg active:scale-95 text-sm flex items-center justify-center gap-2">
+          <span>🎙️</span> Record
         </button>
-        <button id="stopBtn" onclick="stopRecording()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-rose-600 hover:bg-rose-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm">
-          ⏹️ Stop
+        <button id="stopBtn" onclick="stopRecording()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-rose-600 hover:bg-rose-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
+          <span>⏹️</span> Stop
         </button>
-        <button id="generateBtn" onclick="processEditedTranscript()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm">
-          ⚙️ Generate AI Report
+        <button id="generateBtn" onclick="processEditedTranscript()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
+          <span>⚙️</span> Generate AI Report
         </button>
-        <button id="downloadPdfBtn" onclick="downloadPDF()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm">
-          📄 PDF
+        <button id="downloadPdfBtn" onclick="downloadPDF()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
+          <span>📄</span> PDF
         </button>
-        <button id="emailBtn" onclick="sendEmailToPatient()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-purple-600 hover:bg-purple-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm">
-          📧 Email Patient
+        <button id="emailBtn" onclick="sendEmailToPatient()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-purple-600 hover:bg-purple-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
+          <span>📧</span> Email Patient
         </button>
       </div>
     </div>
 
     <!-- Editable Live Transcript Box -->
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg flex flex-col w-full">
+    <div id="transcriptCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg flex flex-col w-full transition-all duration-300">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Editable Transcript</h2>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <span>Editable Transcript</span>
+        </h2>
         <span class="text-[10px] text-slate-500">Edit text before generating report</span>
       </div>
-      <textarea id="transcriptText" class="w-full bg-slate-700 text-sm text-slate-200 rounded-xl p-4 min-h-[120px] focus:ring-2 focus:ring-indigo-500 outline-none resize-y placeholder-slate-500" placeholder="Audio transcript will appear here. You can manually type or edit this text before clicking 'Generate AI Report'..."></textarea>
+      <textarea id="transcriptText" class="w-full bg-slate-700 text-sm text-slate-200 rounded-xl p-4 min-h-[120px] focus:ring-2 focus:ring-indigo-500 outline-none resize-y placeholder-slate-500 transition" placeholder="Audio transcript will appear here. You can manually type or edit this text before clicking 'Generate AI Report'..."></textarea>
     </div>
 
     <!-- Output Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full" id="reportUI">
       
       <!-- SOAP Clinical Report -->
-      <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4 w-full">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-700 pb-2">Clinical SOAP Report</h2>
+      <div id="soapCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4 w-full transition-all duration-300">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-700 pb-2 flex items-center justify-between">
+          <span>Clinical SOAP Report</span>
+        </h2>
         <div class="space-y-3 text-sm text-slate-300" id="soapContainer">
           <div class="break-words"><span class="font-bold text-slate-100">S:</span> <span id="soapS">-</span></div>
           <div class="break-words"><span class="font-bold text-slate-100">O:</span> <span id="soapO">-</span></div>
@@ -80,7 +143,7 @@
       </div>
 
       <!-- Client/Patient Instructions -->
-      <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4 w-full">
+      <div id="instructionsCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4 w-full transition-all duration-300">
         <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-700 pb-2">Client Discharge Instructions</h2>
         <p id="instructionsText" class="text-sm text-slate-300 leading-relaxed min-h-[100px] break-words">-</p>
       </div>
@@ -125,6 +188,95 @@
 
     let detectedLocation = "Unknown Location";
 
+    // Dynamic UI Animation Observer Controller
+    const statusTextElem = document.getElementById('statusText');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusBadgeText = document.getElementById('statusBadgeText');
+    const statusIconContainer = document.getElementById('statusIcon');
+    const progressBarContainer = document.getElementById('progressBarContainer');
+    const audioWave = document.getElementById('audioWave');
+    const transcriptCard = document.getElementById('transcriptCard');
+    const soapCard = document.getElementById('soapCard');
+
+    function updateStatusAnimations(text) {
+      const lower = text.toLowerCase();
+      
+      // Default resets
+      progressBarContainer.classList.add('hidden');
+      audioWave.classList.add('hidden');
+      transcriptCard.classList.remove('status-glow', 'border-indigo-500');
+      soapCard.classList.remove('status-glow', 'border-indigo-500');
+
+      if (lower.includes('ready') || lower.includes('complete') || lower.includes('saved') || lower.includes('sent')) {
+        // Idle / Ready / Success State
+        statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 transition-all duration-300";
+        statusBadgeText.innerText = lower.includes('saved') || lower.includes('sent') || lower.includes('complete') ? "Success" : "Ready";
+        statusIconContainer.innerHTML = `
+          <span class="relative flex h-2.5 w-2.5">
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+          </span>
+        `;
+      } 
+      else if (lower.includes('recording')) {
+        // Live Audio Recording State
+        audioWave.classList.remove('hidden');
+        statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-400 transition-all duration-300";
+        statusBadgeText.innerText = "Recording";
+        statusIconContainer.innerHTML = `
+          <span class="relative flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+          </span>
+        `;
+      } 
+      else if (lower.includes('loading') || lower.includes('analyzing') || lower.includes('transcribing') || lower.includes('decoding') || lower.includes('preparing') || lower.includes('sending') || lower.includes('syncing') || lower.includes('unloading')) {
+        // Active AI Engine / Processing State
+        progressBarContainer.classList.remove('hidden');
+        
+        if (lower.includes('transcribing')) {
+          transcriptCard.classList.add('status-glow', 'border-indigo-500');
+        } else if (lower.includes('analyzing')) {
+          soapCard.classList.add('status-glow', 'border-indigo-500');
+        }
+
+        statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 transition-all duration-300";
+        
+        let label = "Processing";
+        if (lower.includes('loading')) label = "Loading Model";
+        else if (lower.includes('transcribing') || lower.includes('decoding')) label = "Transcribing";
+        else if (lower.includes('analyzing')) label = "AI Thinking";
+        else if (lower.includes('syncing') || lower.includes('sending')) label = "Syncing DB";
+        
+        statusBadgeText.innerText = label;
+        statusIconContainer.innerHTML = `
+          <svg class="animate-spin h-3.5 w-3.5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        `;
+      } 
+      else if (lower.includes('error') || lower.includes('failed')) {
+        // Error Alert State
+        statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 border border-rose-500/50 text-rose-300 transition-all duration-300";
+        statusBadgeText.innerText = "Error";
+        statusIconContainer.innerHTML = `
+          <span class="relative flex h-2.5 w-2.5">
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+          </span>
+        `;
+      }
+    }
+
+    // Attach MutationObserver to statusText to trigger visual updates automatically
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+          updateStatusAnimations(statusTextElem.innerText || statusTextElem.textContent);
+        }
+      });
+    });
+    observer.observe(statusTextElem, { childList: true, characterData: true, subtree: true });
+
     // 1. IP Geolocation Fetch on Load
     async function fetchLocation() {
       try {
@@ -157,7 +309,6 @@
           }
           if (type === 'TRANSCRIBE') {
             self.postMessage({ status: 'progress', message: 'Transcribing consultation audio locally...' });
-            // Receive pre-decoded Float32Array directly from main thread
             const output = await transcriber(payload.audioData, { chunk_length_s: 30, stride_length_s: 5 });
             self.postMessage({ status: 'transcribed', text: output.text });
           }
@@ -174,13 +325,13 @@
                 });
             }
             
-            self.postMessage({ status: 'progress', message: 'Analyzing edited transcript...' });
+            self.postMessage({ status: 'progress', message: 'Analyzing transcript with local AI...' });
             const prompt = \`Analyze this doctor-patient conversation transcript:
 "\${payload.transcript}"
 
 Return a strictly formatted JSON object with two top-level keys:
-1. "SOAP": An object with keys "Subjective", "Objective", "Assessment", "Plan". Keep each section concise (1-2 clear sentences).
-2. "ClientInstructions": A clear, plain-language home care guide for the patient/client (3-4 concise bullet points).
+1. "SOAP": An object with keys "Subjective", "Objective", "Assessment", "Plan". Keep each section extremely concise (1-2 clear sentences).
+2. "ClientInstructions": A concise home-care guide for the patient/client (3-4 brief bullet points).
 
 Output MUST be valid JSON only.\`;
 
@@ -291,12 +442,10 @@ Output MUST be valid JSON only.\`;
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         const arrayBuffer = await audioBlob.arrayBuffer();
 
-        // Decode audio in the main thread where AudioContext exists
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        const audioData = audioBuffer.getChannelData(0); // Float32Array PCM
+        const audioData = audioBuffer.getChannelData(0);
 
-        // Transfer raw float array directly to worker
         worker.postMessage({ type: 'TRANSCRIBE', payload: { audioData } }, [audioData.buffer]);
         
         stream.getTracks().forEach(track => track.stop());
@@ -393,7 +542,7 @@ Output MUST be valid JSON only.\`;
       }
     };
 
-    // Frontend PDF Generation Function (Downloadable immediately)
+    // Frontend PDF Generation Function
     window.downloadPDF = () => {
       if (!generatedData) return;
 
