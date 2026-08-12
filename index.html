@@ -201,14 +201,12 @@
     function updateStatusAnimations(text) {
       const lower = text.toLowerCase();
       
-      // Default resets
       progressBarContainer.classList.add('hidden');
       audioWave.classList.add('hidden');
       transcriptCard.classList.remove('status-glow', 'border-indigo-500');
       soapCard.classList.remove('status-glow', 'border-indigo-500');
 
       if (lower.includes('ready') || lower.includes('complete') || lower.includes('saved') || lower.includes('sent')) {
-        // Idle / Ready / Success State
         statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 transition-all duration-300";
         statusBadgeText.innerText = lower.includes('saved') || lower.includes('sent') || lower.includes('complete') ? "Success" : "Ready";
         statusIconContainer.innerHTML = `
@@ -218,7 +216,6 @@
         `;
       } 
       else if (lower.includes('recording')) {
-        // Live Audio Recording State
         audioWave.classList.remove('hidden');
         statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-400 transition-all duration-300";
         statusBadgeText.innerText = "Recording";
@@ -230,7 +227,6 @@
         `;
       } 
       else if (lower.includes('loading') || lower.includes('analyzing') || lower.includes('transcribing') || lower.includes('decoding') || lower.includes('preparing') || lower.includes('sending') || lower.includes('syncing') || lower.includes('unloading')) {
-        // Active AI Engine / Processing State
         progressBarContainer.classList.remove('hidden');
         
         if (lower.includes('transcribing')) {
@@ -256,7 +252,6 @@
         `;
       } 
       else if (lower.includes('error') || lower.includes('failed')) {
-        // Error Alert State
         statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 border border-rose-500/50 text-rose-300 transition-all duration-300";
         statusBadgeText.innerText = "Error";
         statusIconContainer.innerHTML = `
@@ -267,7 +262,6 @@
       }
     }
 
-    // Attach MutationObserver to statusText to trigger visual updates automatically
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList' || mutation.type === 'characterData') {
@@ -277,7 +271,6 @@
     });
     observer.observe(statusTextElem, { childList: true, characterData: true, subtree: true });
 
-    // 1. IP Geolocation Fetch on Load
     async function fetchLocation() {
       try {
         const response = await fetch('https://ipapi.co/json/');
@@ -290,9 +283,9 @@
     }
     fetchLocation();
 
-    // Dynamic Web Worker
+    // Dynamic Web Worker (UPDATED TO PREVENT GPU CRASH)
     const workerCode = `
-      import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers/+esm';
+      import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
 
       env.allowLocalModels = false;
@@ -303,23 +296,34 @@
         const { type, payload } = e.data;
         try {
           if (type === 'LOAD_WHISPER') {
-            self.postMessage({ status: 'progress', message: 'Loading Whisper Speech Model (WebGPU)...' });
-            transcriber = await pipeline('automatic-speech-recognition', 'onnx-community/whisper-tiny.en', { device: 'webgpu' });
+            self.postMessage({ status: 'progress', message: 'Loading Whisper Speech Model (CPU)...' });
+            // FIX 1: Removed WebGPU to save VRAM for the LLM. Runs smoothly on CPU WASM.
+            transcriber = await pipeline('automatic-speech-recognition', 'onnx-community/whisper-tiny.en');
             self.postMessage({ status: 'ready_whisper' });
           }
+          
           if (type === 'TRANSCRIBE') {
             self.postMessage({ status: 'progress', message: 'Transcribing consultation audio locally...' });
-            const output = await transcriber(payload.audioData, { chunk_length_s: 30, stride_length_s: 5 });
+            // FIX 2: Added explicit language and task to prevent the std::string BindingError
+            const output = await transcriber(payload.audioData, { 
+              chunk_length_s: 30, 
+              stride_length_s: 5,
+              language: 'english',
+              task: 'transcribe'
+            });
             self.postMessage({ status: 'transcribed', text: output.text });
           }
+          
           if (type === 'UNLOAD_WHISPER') {
             if (transcriber?.dispose) transcriber.dispose();
             transcriber = null;
             self.postMessage({ status: 'unloaded_whisper' });
           }
+          
           if (type === 'PROCESS_EDITED_TEXT') {
             self.postMessage({ status: 'progress', message: 'Loading Llama 3.2 1B Engine (WebGPU)...' });
             if (!llmEngine) {
+                // LLM retains exclusive access to WebGPU to prevent DXGI_ERROR_DEVICE_HUNG
                 llmEngine = await CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC", {
                   initProgressCallback: (info) => self.postMessage({ status: 'progress', message: info.text })
                 });
@@ -347,6 +351,7 @@ Output MUST be valid JSON only.\`;
             const parsed = JSON.parse(reply.choices[0].message.content);
             self.postMessage({ status: 'reports_generated', data: parsed });
           }
+          
           if (type === 'UNLOAD_LLM') {
             if (llmEngine) await llmEngine.unload();
             llmEngine = null;
@@ -378,6 +383,7 @@ Output MUST be valid JSON only.\`;
 
       if (error) {
         statusText.innerText = `Error: ${error}`;
+        console.error("Worker Error:", error);
         return;
       }
 
@@ -405,7 +411,6 @@ Output MUST be valid JSON only.\`;
         document.getElementById('soapP').innerText = data.SOAP?.Plan || "N/A";
         document.getElementById('instructionsText').innerText = data.ClientInstructions || "N/A";
 
-        // Enable buttons
         downloadPdfBtn.disabled = false;
         downloadPdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         emailBtn.disabled = false;
@@ -443,8 +448,8 @@ Output MUST be valid JSON only.\`;
         const arrayBuffer = await audioBlob.arrayBuffer();
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        const audioData = audioBuffer.getChannelData(0);
+        const audioBufferDecoded = await audioCtx.decodeAudioData(arrayBuffer);
+        const audioData = audioBufferDecoded.getChannelData(0);
 
         worker.postMessage({ type: 'TRANSCRIBE', payload: { audioData } }, [audioData.buffer]);
         
@@ -499,7 +504,6 @@ Output MUST be valid JSON only.\`;
       }
     }
 
-    // Email Functionality
     window.sendEmailToPatient = async () => {
       const emailInput = document.getElementById('patientEmail').value.trim();
       if (!emailInput) {
@@ -542,7 +546,6 @@ Output MUST be valid JSON only.\`;
       }
     };
 
-    // Frontend PDF Generation Function
     window.downloadPDF = () => {
       if (!generatedData) return;
 
