@@ -167,9 +167,9 @@
             self.postMessage({ status: 'unloaded_whisper' });
           }
           if (type === 'PROCESS_EDITED_TEXT') {
-            self.postMessage({ status: 'progress', message: 'Loading WebLLM AI Engine (WebGPU)...' });
+            self.postMessage({ status: 'progress', message: 'Loading Llama 3.2 1B Engine (WebGPU)...' });
             if (!llmEngine) {
-                llmEngine = await CreateMLCEngine("Phi-3-mini-4k-instruct-q4f16_1-MLC", {
+                llmEngine = await CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC", {
                   initProgressCallback: (info) => self.postMessage({ status: 'progress', message: info.text })
                 });
             }
@@ -179,16 +179,17 @@
 "\${payload.transcript}"
 
 Return a strictly formatted JSON object with two top-level keys:
-1. "SOAP": An object with keys "Subjective", "Objective", "Assessment", "Plan".
-2. "ClientInstructions": A clear, plain-language home care guide for the patient/client.
+1. "SOAP": An object with keys "Subjective", "Objective", "Assessment", "Plan". Keep each section concise (1-2 clear sentences).
+2. "ClientInstructions": A clear, plain-language home care guide for the patient/client (3-4 concise bullet points).
 
 Output MUST be valid JSON only.\`;
 
             const reply = await llmEngine.chat.completions.create({
               messages: [
-                { role: "system", content: "You are a clinical documentation specialist. Output valid JSON only." },
+                { role: "system", content: "You are a concise clinical documentation specialist. Output valid JSON only." },
                 { role: "user", content: prompt }
               ],
+              max_tokens: 350,
               response_format: { type: "json_object" }
             });
 
