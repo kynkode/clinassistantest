@@ -412,7 +412,10 @@ Output MUST be valid JSON only.\`;
       }
 
       if (status === 'transcribed') {
-        transcriptBox.value = text;
+        // Strip out non-speech transcription artifacts like [MUSIC], [BLANK_AUDIO]
+        const cleanedTranscriptText = text.replace(/\[.*?\]/g, '').replace(/\s+/g, ' ').trim();
+        
+        transcriptBox.value = cleanedTranscriptText;
         statusText.innerText = "Transcription complete. You may edit the text now.";
         worker.postMessage({ type: 'UNLOAD_WHISPER' });
         
