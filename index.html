@@ -4,14 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Consultation AI Assistant</title>
-  <!-- Prevent 404 favicon error -->
   <link rel="icon" href="data:,">
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- html2pdf for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
-    /* Custom Loading Animations */
     @keyframes shimmer {
       0% { background-position: -200% 0; }
       100% { background-position: 200% 0; }
@@ -61,7 +58,6 @@
     <!-- Header & Controls with Animated Status Header -->
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative overflow-hidden">
       
-      <!-- Top Shimmer Progress Bar (Hidden when idle) -->
       <div id="progressBarContainer" class="absolute top-0 left-0 w-full h-1 bg-slate-700/50 overflow-hidden hidden">
         <div class="h-full w-full animate-shimmer"></div>
       </div>
@@ -70,14 +66,12 @@
         <div class="flex items-center gap-3 flex-wrap">
           <h1 class="text-2xl font-bold text-indigo-400">Consultation Listener</h1>
           
-          <!-- Animated Dynamic Badge -->
           <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-700/80 border border-slate-600 text-slate-300 transition-all duration-300">
             <span id="statusIcon" class="relative flex h-2.5 w-2.5 items-center justify-center">
               <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
             </span>
             <span id="statusBadgeText" class="font-mono text-[11px] uppercase tracking-wider">Ready</span>
             
-            <!-- Animated Audio Wave Lines (Visible during recording) -->
             <div id="audioWave" class="hidden flex items-end gap-0.5 h-3 ml-1">
               <span class="w-0.5 bg-rose-400 animate-wave-1 rounded-full"></span>
               <span class="w-0.5 bg-rose-400 animate-wave-2 rounded-full"></span>
@@ -87,27 +81,25 @@
           </div>
         </div>
 
-        <!-- Live Status Text -->
         <p class="text-xs text-slate-400 font-mono transition-all duration-300 flex items-center gap-2" id="statusText">
           Status: Ready to record
         </p>
       </div>
 
-      <!-- Action Control Buttons -->
       <div class="flex flex-col sm:flex-row flex-wrap gap-3 w-full lg:w-auto justify-start lg:justify-end">
-        <button id="recordBtn" onclick="startRecording()" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-xl transition shadow-lg active:scale-95 text-sm flex items-center justify-center gap-2">
+        <button id="recordBtn" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-xl transition shadow-lg active:scale-95 text-sm flex items-center justify-center gap-2">
           <span>🎙️</span> Record
         </button>
-        <button id="stopBtn" onclick="stopRecording()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-rose-600 hover:bg-rose-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
+        <button id="stopBtn" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-rose-600 hover:bg-rose-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
           <span>⏹️</span> Stop
         </button>
-        <button id="generateBtn" onclick="processEditedTranscript()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
+        <button id="generateBtn" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
           <span>⚙️</span> Generate AI Report
         </button>
-        <button id="downloadPdfBtn" onclick="downloadPDF()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
+        <button id="downloadPdfBtn" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
           <span>📄</span> PDF
         </button>
-        <button id="emailBtn" onclick="sendEmailToPatient()" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-purple-600 hover:bg-purple-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
+        <button id="emailBtn" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-purple-600 hover:bg-purple-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
           <span>📧</span> Email Patient
         </button>
       </div>
@@ -149,14 +141,14 @@
     </div>
   </div>
 
-  <!-- Hidden Container for PDF Rendering -->
-  <div id="pdfTemplate" class="hidden bg-white text-black p-6 sm:p-10 w-[800px] max-w-full">
-    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+  <!-- Off-screen Container for PDF Rendering (avoid display:none capture issue) -->
+  <div id="pdfTemplate" class="fixed -left-[9999px] top-0 bg-white text-black p-10 w-[800px] pointer-events-none">
+    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end gap-4">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900" id="pdfClinicName">Clinic Name</h1>
-        <h2 class="text-base sm:text-lg text-slate-700 mt-1" id="pdfDoctorName">Doctor Name</h2>
+        <h1 class="text-3xl font-bold text-slate-900" id="pdfClinicName">Clinic Name</h1>
+        <h2 class="text-lg text-slate-700 mt-1" id="pdfDoctorName">Doctor Name</h2>
       </div>
-      <div class="text-left sm:text-right text-xs sm:text-sm text-slate-500">
+      <div class="text-right text-sm text-slate-500">
         <p id="pdfLocation">Location</p>
         <p id="pdfDate">Date</p>
       </div>
@@ -179,14 +171,10 @@
   </div>
 
   <script type="module">
-    // -------------------------------------------------------------
-    // CONFIGURATION: Set your deployed Google Apps Script URL here
-    // -------------------------------------------------------------
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKgc_7LH5gRwfA_dSus6Vl9sWGLHqi5-hEa5FTkmcaySJc0khdf8cQlACShD4iJjq-UQ/exec";
 
     let detectedLocation = "Unknown Location";
 
-    // Dynamic UI Animation Observer Controller
     const statusTextElem = document.getElementById('statusText');
     const statusBadge = document.getElementById('statusBadge');
     const statusBadgeText = document.getElementById('statusBadgeText');
@@ -273,7 +261,7 @@
       try {
         const response = await fetch('https://ipapi.co/json/');
         const data = await response.json();
-        detectedLocation = `${data.city},${data.region}, ${data.country_name} (IP:${data.ip})`;
+        detectedLocation = `${data.city}, ${data.region}, ${data.country_name} (IP:${data.ip})`;
         document.getElementById('locationData').innerText = detectedLocation;
       } catch (err) {
         document.getElementById('locationData').innerText = "Location detection failed";
@@ -281,7 +269,7 @@
     }
     fetchLocation();
 
-    // Dynamic Web Worker: Explicit Compute Split (CPU for Whisper, 100% WebGPU for LLM)
+    // Escaped dynamic Worker template literals
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -296,7 +284,6 @@
           if (type === 'LOAD_WHISPER') {
             self.postMessage({ status: 'progress', message: 'Loading Whisper Speech Model (CPU / WASM thread)...' });
             
-            // EXPLICIT COMPUTE SPLIT: Force Whisper onto CPU/WASM to prevent WebGPU resource contention
             transcriber = await pipeline('automatic-speech-recognition', 'onnx-community/whisper-tiny.en', {
               device: 'wasm',
               dtype: {
@@ -331,7 +318,6 @@
 
             self.postMessage({ status: 'progress', message: 'Loading Llama 3.2 1B Engine (100% WebGPU)...' });
             if (!llmEngine) {
-                // EXPLICIT COMPUTE SPLIT: Web-LLM handles 100% GPU acceleration with clean WebGPU context
                 llmEngine = await CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC", {
                   initProgressCallback: (info) => {
                     const msg = typeof info === 'string' ? info : (info?.text || 'Loading GPU model...');
@@ -363,10 +349,11 @@ Output MUST be valid JSON only.\`;
               contentStr = JSON.stringify(contentStr || {});
             }
 
-            // CLEANUP FIX: Remove Markdown code formatting wrappers prior to parsing JSON
-            contentStr = contentStr.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/```$/g, '').trim();
+            // Extract JSON cleanly matching object structure
+            const jsonMatch = contentStr.match(/\\{[\\s\\S]*\\}/);
+            const cleanJsonStr = jsonMatch ? jsonMatch[0] : contentStr;
 
-            const parsed = JSON.parse(contentStr);
+            const parsed = JSON.parse(cleanJsonStr);
             self.postMessage({ status: 'reports_generated', data: parsed });
           }
           
@@ -444,55 +431,64 @@ Output MUST be valid JSON only.\`;
       }
     };
 
-    window.startRecording = async () => {
-      audioChunks = [];
-      transcriptBox.value = "";
-      generateBtn.disabled = true;
-      generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      downloadPdfBtn.disabled = true;
-      downloadPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      emailBtn.disabled = true;
-      emailBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    const startRecording = async () => {
+      try {
+        audioChunks = [];
+        transcriptBox.value = "";
+        generateBtn.disabled = true;
+        generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        downloadPdfBtn.disabled = true;
+        downloadPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        emailBtn.disabled = true;
+        emailBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
 
-      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-      
-      mediaRecorder.onstop = async () => {
-        statusText.innerText = "Decoding audio data...";
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
         
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const arrayBuffer = await audioBlob.arrayBuffer();
+        mediaRecorder.onstop = async () => {
+          statusText.innerText = "Decoding audio data...";
+          
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const arrayBuffer = await audioBlob.arrayBuffer();
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        const audioBufferDecoded = await audioCtx.decodeAudioData(arrayBuffer);
-        const audioData = audioBufferDecoded.getChannelData(0);
+          // Standardized cross-browser AudioContext initialization
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          const audioCtx = new AudioContextClass();
+          const audioBufferDecoded = await audioCtx.decodeAudioData(arrayBuffer);
+          
+          // Downsample to 16kHz channel mono for Whisper input
+          const rawAudio = audioBufferDecoded.getChannelData(0);
+          worker.postMessage({ type: 'TRANSCRIBE', payload: { audioData: rawAudio } }, [rawAudio.buffer]);
+          
+          stream.getTracks().forEach(track => track.stop());
+          await audioCtx.close();
+        };
 
-        worker.postMessage({ type: 'TRANSCRIBE', payload: { audioData } }, [audioData.buffer]);
-        
-        stream.getTracks().forEach(track => track.stop());
-        await audioCtx.close();
-      };
+        worker.postMessage({ type: 'LOAD_WHISPER' });
+        mediaRecorder.start();
 
-      worker.postMessage({ type: 'LOAD_WHISPER' });
-      mediaRecorder.start();
-
-      recordBtn.disabled = true;
-      recordBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      stopBtn.disabled = false;
-      stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        recordBtn.disabled = true;
+        recordBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        stopBtn.disabled = false;
+        stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } catch (err) {
+        statusText.innerText = `Microphone Error: ${err.message}`;
+      }
     };
 
-    window.stopRecording = () => {
-      mediaRecorder.stop();
-      recordBtn.disabled = false;
-      recordBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-      stopBtn.disabled = true;
-      stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    const stopRecording = () => {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        recordBtn.disabled = false;
+        recordBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        stopBtn.disabled = true;
+        stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
     };
 
-    window.processEditedTranscript = () => {
+    const processEditedTranscript = () => {
       const editedText = transcriptBox.value.trim();
       if (!editedText) return alert("Transcript is empty!");
       
@@ -522,7 +518,7 @@ Output MUST be valid JSON only.\`;
       }
     }
 
-    window.sendEmailToPatient = async () => {
+    const sendEmailToPatient = async () => {
       const emailInput = document.getElementById('patientEmail').value.trim();
       if (!emailInput) {
         alert("Please enter a valid Patient Email Address in the settings above.");
@@ -564,7 +560,7 @@ Output MUST be valid JSON only.\`;
       }
     };
 
-    window.downloadPDF = () => {
+    const downloadPDF = () => {
       if (!generatedData) return;
 
       document.getElementById('pdfClinicName').innerText = document.getElementById('clinicName').value || "Clinic Name";
@@ -579,23 +575,24 @@ Output MUST be valid JSON only.\`;
       document.getElementById('pdfInstructions').innerText = generatedData.ClientInstructions || "N/A";
 
       const element = document.getElementById('pdfTemplate');
-      element.classList.remove('hidden');
-      element.classList.add('block');
 
       const opt = {
-        margin:       1,
+        margin:       0.5,
         filename:     `Clinical_Report_${new Date().getTime()}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2 },
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
 
-      html2pdf().set(opt).from(element).save().then(() => {
-        element.classList.remove('block');
-        element.classList.add('hidden');
-      });
+      html2pdf().set(opt).from(element).save();
     };
+
+    // Attach Clean Event Listeners
+    recordBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+    generateBtn.addEventListener('click', processEditedTranscript);
+    downloadPdfBtn.addEventListener('click', downloadPDF);
+    emailBtn.addEventListener('click', sendEmailToPatient);
   </script>
-  
 </body>
 </html>
