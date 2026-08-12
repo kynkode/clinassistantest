@@ -157,7 +157,8 @@
           }
           if (type === 'TRANSCRIBE') {
             self.postMessage({ status: 'progress', message: 'Transcribing consultation audio locally...' });
-            const output = await transcriber(payload.audioUrl, { chunk_length_s: 30, stride_length_s: 5 });
+            // Receive pre-decoded Float32Array directly from main thread
+            const output = await transcriber(payload.audioData, { chunk_length_s: 30, stride_length_s: 5 });
             self.postMessage({ status: 'transcribed', text: output.text });
           }
           if (type === 'UNLOAD_WHISPER') {
@@ -282,11 +283,23 @@ Output MUST be valid JSON only.\`;
       mediaRecorder = new MediaRecorder(stream);
 
       mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-      mediaRecorder.onstop = () => {
+      
+      mediaRecorder.onstop = async () => {
+        statusText.innerText = "Decoding audio data...";
+        
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        worker.postMessage({ type: 'TRANSCRIBE', payload: { audioUrl } });
+        const arrayBuffer = await audioBlob.arrayBuffer();
+
+        // Decode audio in the main thread where AudioContext exists
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        const audioData = audioBuffer.getChannelData(0); // Float32Array PCM
+
+        // Transfer raw float array directly to worker
+        worker.postMessage({ type: 'TRANSCRIBE', payload: { audioData } }, [audioData.buffer]);
+        
         stream.getTracks().forEach(track => track.stop());
+        await audioCtx.close();
       };
 
       worker.postMessage({ type: 'LOAD_WHISPER' });
