@@ -135,7 +135,7 @@
       <!-- Client/Patient Instructions -->
       <div id="instructionsCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4 w-full transition-all duration-300">
         <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-700 pb-2">Client Discharge Instructions</h2>
-        <p id="instructionsText" class="text-sm text-slate-300 leading-relaxed min-h-[100px] break-words">-</p>
+        <p id="instructionsText" class="text-sm text-slate-300 leading-relaxed min-h-[100px] break-words whitespace-pre-wrap">-</p>
       </div>
 
     </div>
@@ -166,7 +166,7 @@
 
     <div>
       <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2">Discharge Instructions</h3>
-      <p class="text-sm whitespace-pre-wrap" id="pdfInstructions"></p>
+      <p class="text-sm whitespace-pre-wrap leading-relaxed" id="pdfInstructions"></p>
     </div>
   </div>
 
@@ -346,7 +346,7 @@
 
 Return a strictly formatted JSON object with two top-level keys:
 1. "SOAP": An object with keys "Subjective", "Objective", "Assessment", "Plan". Keep each section extremely concise (1-2 clear sentences).
-2. "ClientInstructions": A concise home-care guide for the patient/client (3-4 brief bullet points).
+2. "ClientInstructions": A concise home-care guide for the patient/client formatted as a single string containing bullet points (e.g., "- Rest well\\n- Take prescribed medication").
 
 Output MUST be valid JSON only.\`;
 
@@ -421,13 +421,24 @@ Output MUST be valid JSON only.\`;
       }
 
       if (status === 'reports_generated') {
+        // Format ClientInstructions into a string if array or object was returned by AI
+        let formattedInstructions = data.ClientInstructions;
+        if (Array.isArray(formattedInstructions)) {
+          formattedInstructions = formattedInstructions.map(item => typeof item === 'string' && item.startsWith('•') ? item : `• ${item}`).join('\n');
+        } else if (typeof formattedInstructions === 'object' && formattedInstructions !== null) {
+          formattedInstructions = Object.values(formattedInstructions).map(item => `• ${item}`).join('\n');
+        } else {
+          formattedInstructions = String(formattedInstructions || "N/A");
+        }
+
+        data.ClientInstructions = formattedInstructions;
         generatedData = data;
         
         document.getElementById('soapS').innerText = data.SOAP?.Subjective || "N/A";
         document.getElementById('soapO').innerText = data.SOAP?.Objective || "N/A";
         document.getElementById('soapA').innerText = data.SOAP?.Assessment || "N/A";
         document.getElementById('soapP').innerText = data.SOAP?.Plan || "N/A";
-        document.getElementById('instructionsText').innerText = data.ClientInstructions || "N/A";
+        document.getElementById('instructionsText').innerText = data.ClientInstructions;
 
         downloadPdfBtn.disabled = false;
         downloadPdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
