@@ -1,7 +1,3 @@
-<!-- ========================================== -->
-<!-- FILE: index.html (Frontend with Animated States) -->
-<!-- ========================================== -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -283,7 +279,7 @@
     }
     fetchLocation();
 
-    // Dynamic Web Worker (UPDATED TO PREVENT GPU CRASH)
+    // Dynamic Web Worker
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -297,19 +293,16 @@
         try {
           if (type === 'LOAD_WHISPER') {
             self.postMessage({ status: 'progress', message: 'Loading Whisper Speech Model (CPU)...' });
-            // FIX 1: Removed WebGPU to save VRAM for the LLM. Runs smoothly on CPU WASM.
             transcriber = await pipeline('automatic-speech-recognition', 'onnx-community/whisper-tiny.en');
             self.postMessage({ status: 'ready_whisper' });
           }
           
           if (type === 'TRANSCRIBE') {
             self.postMessage({ status: 'progress', message: 'Transcribing consultation audio locally...' });
-            // FIX 2: Added explicit language and task to prevent the std::string BindingError
+            // FIXED: Removed task and language parameters for the .en model
             const output = await transcriber(payload.audioData, { 
               chunk_length_s: 30, 
-              stride_length_s: 5,
-              language: 'english',
-              task: 'transcribe'
+              stride_length_s: 5
             });
             self.postMessage({ status: 'transcribed', text: output.text });
           }
@@ -323,7 +316,6 @@
           if (type === 'PROCESS_EDITED_TEXT') {
             self.postMessage({ status: 'progress', message: 'Loading Llama 3.2 1B Engine (WebGPU)...' });
             if (!llmEngine) {
-                // LLM retains exclusive access to WebGPU to prevent DXGI_ERROR_DEVICE_HUNG
                 llmEngine = await CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC", {
                   initProgressCallback: (info) => self.postMessage({ status: 'progress', message: info.text })
                 });
