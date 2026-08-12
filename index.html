@@ -141,7 +141,7 @@
     </div>
   </div>
 
-  <!-- Off-screen Container for PDF Rendering (avoid display:none capture issue) -->
+  <!-- Off-screen Container for PDF Rendering -->
   <div id="pdfTemplate" class="fixed -left-[9999px] top-0 bg-white text-black p-10 w-[800px] pointer-events-none">
     <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end gap-4">
       <div>
@@ -258,13 +258,27 @@
     observer.observe(statusTextElem, { childList: true, characterData: true, subtree: true });
 
     async function fetchLocation() {
+      const locationElem = document.getElementById('locationData');
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
       try {
-        const response = await fetch('https://ipapi.co/json/');
+        const response = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
         const data = await response.json();
-        detectedLocation = `${data.city}, ${data.region}, ${data.country_name} (IP:${data.ip})`;
-        document.getElementById('locationData').innerText = detectedLocation;
+        if (data.error) throw new Error(data.reason || "IP lookup error");
+
+        detectedLocation = `${data.city || 'Unknown City'}, ${data.region || ''}, ${data.country_name || ''}`.replace(/^,\s*|,\s*$/g, '');
+        locationElem.innerText = detectedLocation;
       } catch (err) {
-        document.getElementById('locationData').innerText = "Location detection failed";
+        detectedLocation = "Default Clinic Location";
+        locationElem.innerText = "Location unavailable (using default)";
+        locationElem.classList.remove('text-emerald-400');
+        locationElem.classList.add('text-amber-400');
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
     fetchLocation();
@@ -349,7 +363,6 @@ Output MUST be valid JSON only.\`;
               contentStr = JSON.stringify(contentStr || {});
             }
 
-            // Extract JSON cleanly matching object structure
             const jsonMatch = contentStr.match(/\\{[\\s\\S]*\\}/);
             const cleanJsonStr = jsonMatch ? jsonMatch[0] : contentStr;
 
@@ -453,12 +466,10 @@ Output MUST be valid JSON only.\`;
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           const arrayBuffer = await audioBlob.arrayBuffer();
 
-          // Standardized cross-browser AudioContext initialization
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
           const audioCtx = new AudioContextClass();
           const audioBufferDecoded = await audioCtx.decodeAudioData(arrayBuffer);
           
-          // Downsample to 16kHz channel mono for Whisper input
           const rawAudio = audioBufferDecoded.getChannelData(0);
           worker.postMessage({ type: 'TRANSCRIBE', payload: { audioData: rawAudio } }, [rawAudio.buffer]);
           
@@ -587,7 +598,6 @@ Output MUST be valid JSON only.\`;
       html2pdf().set(opt).from(element).save();
     };
 
-    // Attach Clean Event Listeners
     recordBtn.addEventListener('click', startRecording);
     stopBtn.addEventListener('click', stopRecording);
     generateBtn.addEventListener('click', processEditedTranscript);
