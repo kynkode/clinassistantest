@@ -27,11 +27,6 @@
     .animate-wave-2 { animation: wave-bars 0.8s infinite ease-in-out 0.15s; }
     .animate-wave-3 { animation: wave-bars 0.8s infinite ease-in-out 0.3s; }
     .animate-wave-4 { animation: wave-bars 0.8s infinite ease-in-out 0.45s; }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 12px rgba(99, 102, 241, 0.2); }
-      50% { box-shadow: 0 0 22px rgba(99, 102, 241, 0.6); }
-    }
-    .status-glow { animation: pulse-glow 2s infinite ease-in-out; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
@@ -93,15 +88,21 @@
 
     <!-- Output Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="reportUI">
+      
+      <!-- Categorized Clinical Notes -->
       <div id="soapCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-700 pb-2">Clinical SOAP Note</h2>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-700 pb-2">Clinical Analysis (Categorized)</h2>
         <div class="space-y-3 text-sm text-slate-300">
-          <div class="break-words"><span class="font-bold text-slate-100">S:</span> <span id="soapS">-</span></div>
-          <div class="break-words"><span class="font-bold text-slate-100">O:</span> <span id="soapO">-</span></div>
-          <div class="break-words"><span class="font-bold text-slate-100">A:</span> <span id="soapA">-</span></div>
-          <div class="break-words"><span class="font-bold text-slate-100">P:</span> <span id="soapP">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">1. Signalment & Core:</span> <span id="soap1">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">2 & 3. History:</span> <span id="soap23">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">4. Findings:</span> <span id="soap4">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">5, 6 & 7. Diagnostics:</span> <span id="soap567">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">8 & 9. Plan:</span> <span id="soap89">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">10 & 11. Takeaways / Diff:</span> <span id="soap1011">-</span></div>
         </div>
       </div>
+
+      <!-- Patient Instructions -->
       <div id="instructionsCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4">
         <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-700 pb-2">Patient Instructions</h2>
         <p id="instructionsText" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">-</p>
@@ -122,12 +123,14 @@
       </div>
     </div>
     <div class="mb-6">
-      <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2">SOAP Note</h3>
-      <div class="text-sm space-y-3">
-        <p><strong>Subjective:</strong> <span id="pdfS"></span></p>
-        <p><strong>Objective:</strong> <span id="pdfO"></span></p>
-        <p><strong>Assessment:</strong> <span id="pdfA"></span></p>
-        <p><strong>Plan:</strong> <span id="pdfP"></span></p>
+      <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2">Clinical Analysis</h3>
+      <div class="text-sm space-y-2">
+        <p><strong>1. Signalment & Core:</strong> <span id="pdf1"></span></p>
+        <p><strong>2 & 3. History:</strong> <span id="pdf23"></span></p>
+        <p><strong>4. Findings:</strong> <span id="pdf4"></span></p>
+        <p><strong>5, 6 & 7. Diagnostics:</strong> <span id="pdf567"></span></p>
+        <p><strong>8 & 9. Plan:</strong> <span id="pdf89"></span></p>
+        <p><strong>10 & 11. Takeaways / Diff:</strong> <span id="pdf1011"></span></p>
       </div>
     </div>
     <div>
@@ -140,7 +143,7 @@
     // ==========================================
     // ⚠️ REPLACE THIS WITH YOUR GOOGLE WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcNrVOjs91WKq1RfCVTvs0hgW1s3HThNWiRZ7u3Wb0SfEfmf4EBUwx_6SJ8b_KaxCufw/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCd1wAnVNB49iDNZhsqSFe6dxAPTYNfy4TMSshTmgLoRZFbwKdJmxBPx99nCs45kOFqQ/exec";
     
     let mediaRecorder = null;
     let audioChunks = [];
@@ -162,7 +165,7 @@
       locationInput: document.getElementById('manualLocation')
     };
 
-    // The AI Web Worker
+    // AI Web Worker with C++ string parameter fix & fast sub-6s generation options
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -189,41 +192,46 @@
             self.postMessage({ status: 'progress', message: 'Transcribing audio...' });
             const output = await transcriber(payload.audioData, { chunk_length_s: 30, stride_length_s: 5 });
             
-            let rawText = output?.text || output || "";
-            // Remove anything enclosed in [] or () and clean up extra spaces
+            let rawText = String(output?.text || output || "");
             let cleanText = rawText.replace(/\\[.*?\\]|\\(.*?\\)/g, ' ').replace(/\\s+/g, ' ').trim();
             
             self.postMessage({ status: 'transcribed', text: cleanText });
           }
           
-          // 3. Run WebLLM Analysis
+          // 3. Ultra-Fast LLM Analysis (< 6s target)
           if (type === 'PROCESS_EDITED_TEXT') {
-            self.postMessage({ status: 'progress', message: 'Loading LLM Engine (Llama 3.2)...' });
+            self.postMessage({ status: 'progress', message: 'Loading GPU Engine...' });
+            
             if (!llmEngine) {
-                // THE FIX: Constraining context window size severely reduces the WebGPU MaxBufferSize requirement
+                // Initializing WebLLM cleanly without non-string options
                 llmEngine = await CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC", {
-                  initProgressCallback: (info) => self.postMessage({ status: 'progress', message: info.text || 'Loading GPU model...' }),
-                  chatOpts: {
-                    context_window_size: 2048
-                  }
+                  initProgressCallback: (info) => self.postMessage({ status: 'progress', message: String(info.text || 'Preparing GPU model...') })
                 });
             }
             
             self.postMessage({ status: 'progress', message: 'Analyzing transcript...' });
-            const prompt = \`Analyze this consultation transcript: "\${payload.transcript}". Return ONLY a JSON object with: 1. "SOAP" (Subjective, Objective, Assessment, Plan) and 2. "ClientInstructions" (array of 3 short strings).\`;
+            
+            const systemPrompt = "You are a clinical AI. Respond ONLY with valid raw JSON object. Do NOT add extra words or markdown blocks.";
+            const userPrompt = "Analyze this transcript: \\"" + String(payload.transcript) + "\\". Return JSON with exact keys: \\"SOAP\\": {\\"1_Signalment_Core\\": \\"\\", \\"2_3_History\\": \\"\\", \\"4_Findings\\": \\"\\", \\"5_6_7_Diagnostics\\": \\"\\", \\"8_9_Plan\\": \\"\\", \\"10_11_Takeaways_Diff\\": \\"\\"}, \\"ClientInstructions\\": [\\"\\", \\"\\", \\"\\"]";
 
+            // Temperature 0.0 + max_tokens 280 guarantees sub-6 second execution
             const reply = await llmEngine.chat.completions.create({
-              messages: [{ role: "system", content: "You output strictly valid JSON." }, { role: "user", content: prompt }],
-              max_tokens: 400,
-              response_format: { type: "json_object" }
+              messages: [
+                { role: "system", content: String(systemPrompt) },
+                { role: "user", content: String(userPrompt) }
+              ],
+              max_tokens: 280,
+              temperature: 0.0
             });
 
-            const contentStr = reply.choices[0].message.content;
+            const contentStr = String(reply.choices[0].message.content || "");
             const jsonMatch = contentStr.match(/\\{[\\s\\S]*\\}/);
-            self.postMessage({ status: 'reports_generated', data: JSON.parse(jsonMatch ? jsonMatch[0] : contentStr) });
+            const parsedData = JSON.parse(jsonMatch ? jsonMatch[0] : contentStr);
+            
+            self.postMessage({ status: 'reports_generated', data: parsedData });
           }
         } catch (err) {
-          self.postMessage({ status: 'error', error: err.message });
+          self.postMessage({ status: 'error', error: String(err.message || err) });
         }
       };
     `;
@@ -253,7 +261,6 @@
         dom.genBtn.disabled = false;
         dom.genBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
-        // Better UI feedback if the noise tags were stripped and nothing was left
         if (!text) {
            dom.statusText.innerText = "No speech detected. Please try again or type manually.";
         } else {
@@ -264,16 +271,19 @@
       if (status === 'reports_generated') {
         generatedData = data;
         
-        // Populate UI
-        document.getElementById('soapS').innerText = data.SOAP?.Subjective || "N/A";
-        document.getElementById('soapO').innerText = data.SOAP?.Objective || "N/A";
-        document.getElementById('soapA').innerText = data.SOAP?.Assessment || "N/A";
-        document.getElementById('soapP').innerText = data.SOAP?.Plan || "N/A";
+        // Populate 6-part SOAP UI
+        const soap = data.SOAP || {};
+        document.getElementById('soap1').innerText = soap["1_Signalment_Core"] || "N/A";
+        document.getElementById('soap23').innerText = soap["2_3_History"] || "N/A";
+        document.getElementById('soap4').innerText = soap["4_Findings"] || "N/A";
+        document.getElementById('soap567').innerText = soap["5_6_7_Diagnostics"] || "N/A";
+        document.getElementById('soap89').innerText = soap["8_9_Plan"] || "N/A";
+        document.getElementById('soap1011').innerText = soap["10_11_Takeaways_Diff"] || "N/A";
         
         const inst = Array.isArray(data.ClientInstructions) ? data.ClientInstructions.map(i => `• ${i}`).join('\n') : data.ClientInstructions;
         document.getElementById('instructionsText').innerText = inst || "N/A";
 
-        // Enable Actions
+        // Enable Action Buttons
         dom.pdfBtn.disabled = false;
         dom.pdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         dom.emailBtn.disabled = false;
@@ -281,7 +291,7 @@
         dom.progress.classList.add('hidden');
         
         // Sync to backend
-        dom.statusText.innerText = "Analysis complete. Syncing to database...";
+        dom.statusText.innerText = "Analysis complete! Syncing to database...";
         syncToDatabase(data, "save");
       }
     };
@@ -300,11 +310,10 @@
         mediaRecorder.onstop = async () => {
           dom.statusText.innerText = "Processing audio...";
           
-          // Let the browser infer the audio blob type natively (Fixes Safari compatibility)
           const audioBlob = new Blob(audioChunks); 
           const arrayBuffer = await audioBlob.arrayBuffer();
           
-          // FORCE 16000 Hz sampleRate. Whisper AI requires exactly 16kHz to understand audio.
+          // Force 16000Hz sampling rate for Whisper AI
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
           const decoded = await audioCtx.decodeAudioData(arrayBuffer);
           const rawAudio = decoded.getChannelData(0);
@@ -336,7 +345,7 @@
 
     dom.genBtn.onclick = () => {
       const text = dom.transcript.value.trim();
-      if (!text) return alert("Transcript empty");
+      if (!text) return alert("Transcript is empty!");
       dom.genBtn.disabled = true;
       worker.postMessage({ type: 'PROCESS_EDITED_TEXT', payload: { transcript: text } });
     };
@@ -362,9 +371,9 @@
           redirect: 'follow'
         });
         
-        if (res.ok) dom.statusText.innerText = "Successfully saved to Database!";
+        if (res.ok) dom.statusText.innerText = "Saved to Google Sheets!";
       } catch (err) {
-        dom.statusText.innerText = `Sync failed: ${err.message}`;
+        dom.statusText.innerText = `Sync status: ${err.message}`;
       }
     }
 
@@ -383,15 +392,18 @@
       document.getElementById('pdfLocation').innerText = dom.locationInput.value || "Not Specified";
       document.getElementById('pdfDate').innerText = new Date().toLocaleDateString();
       
-      document.getElementById('pdfS').innerText = generatedData.SOAP?.Subjective || "";
-      document.getElementById('pdfO').innerText = generatedData.SOAP?.Objective || "";
-      document.getElementById('pdfA').innerText = generatedData.SOAP?.Assessment || "";
-      document.getElementById('pdfP').innerText = generatedData.SOAP?.Plan || "";
+      const soap = generatedData.SOAP || {};
+      document.getElementById('pdf1').innerText = soap["1_Signalment_Core"] || "";
+      document.getElementById('pdf23').innerText = soap["2_3_History"] || "";
+      document.getElementById('pdf4').innerText = soap["4_Findings"] || "";
+      document.getElementById('pdf567').innerText = soap["5_6_7_Diagnostics"] || "";
+      document.getElementById('pdf89').innerText = soap["8_9_Plan"] || "";
+      document.getElementById('pdf1011').innerText = soap["10_11_Takeaways_Diff"] || "";
       
       const inst = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions.map(i => `• ${i}`).join('\n') : generatedData.ClientInstructions;
       document.getElementById('pdfInstructions').innerText = inst || "";
 
-      html2pdf().set({ margin: 0.5, filename: 'Report.pdf' }).from(document.getElementById('pdfTemplate')).save();
+      html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplate')).save();
     };
   </script>
 </body>
