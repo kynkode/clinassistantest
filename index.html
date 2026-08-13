@@ -93,12 +93,12 @@
       <div id="soapCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4">
         <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-700 pb-2">Clinical Analysis (Categorized)</h2>
         <div class="space-y-3 text-sm text-slate-300">
-          <div class="break-words"><span class="font-bold text-slate-100">1. Signalment & Core:</span> <span id="soap1">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">1. Signalment & Core(Disease Category):</span> <span id="soap1">-</span></div>
           <div class="break-words"><span class="font-bold text-slate-100">2 & 3. History:</span> <span id="soap23">-</span></div>
           <div class="break-words"><span class="font-bold text-slate-100">4. Findings:</span> <span id="soap4">-</span></div>
-          <div class="break-words"><span class="font-bold text-slate-100">5, 6 & 7. Diagnostics:</span> <span id="soap567">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">5, 6, & 7. Diagnostics:</span> <span id="soap567">-</span></div>
           <div class="break-words"><span class="font-bold text-slate-100">8 & 9. Plan:</span> <span id="soap89">-</span></div>
-          <div class="break-words"><span class="font-bold text-slate-100">10 & 11. Takeaways / Diff:</span> <span id="soap1011">-</span></div>
+          <div class="break-words"><span class="font-bold text-slate-100">10 & 11. Takeaways/Differentiation:</span> <span id="soap1011">-</span></div>
         </div>
       </div>
 
@@ -125,12 +125,12 @@
     <div class="mb-6">
       <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2">Clinical SOAP Report</h3>
       <div class="text-sm space-y-2">
-        <p><strong>1. Signalment & Core:</strong> <span id="pdf1"></span></p>
+        <p><strong>1. Signalment & Core(Disease Category):</strong> <span id="pdf1"></span></p>
         <p><strong>2 & 3. History:</strong> <span id="pdf23"></span></p>
         <p><strong>4. Findings:</strong> <span id="pdf4"></span></p>
-        <p><strong>5, 6 & 7. Diagnostics:</strong> <span id="pdf567"></span></p>
+        <p><strong>5, 6, & 7. Diagnostics:</strong> <span id="pdf567"></span></p>
         <p><strong>8 & 9. Plan:</strong> <span id="pdf89"></span></p>
-        <p><strong>10 & 11. Takeaways / Diff:</strong> <span id="pdf1011"></span></p>
+        <p><strong>10 & 11. Takeaways/Differentiation:</strong> <span id="pdf1011"></span></p>
       </div>
     </div>
     <div>
@@ -143,7 +143,7 @@
     // ==========================================
     // ⚠️ REPLACE THIS WITH YOUR GOOGLE WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWH2UWCrSu_b6vcCxMBz12q5UVIqrkXNJ6kHTpHEcWwZQY9EzIsZubvKvemL6mkdhZ6Q/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyeJKQP5RaeTFpJSLRomA1uFQobyOQ_NV3NYlCaaWdBpA2AEXp9atibA7eYCSG26KxtvQ/exec";
     
     let mediaRecorder = null;
     let audioChunks = [];
@@ -165,7 +165,7 @@
       locationInput: document.getElementById('manualLocation')
     };
 
-    // AI Web Worker with C++ string parameter fix & fast sub-6s generation options
+    // AI Web Worker with strictly formatted 1-11 JSON output structure
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -198,7 +198,7 @@
             self.postMessage({ status: 'transcribed', text: cleanText });
           }
           
-          // 3. Ultra-Fast LLM Analysis (< 6s target)
+          // 3. Ultra-Fast LLM Analysis
           if (type === 'PROCESS_EDITED_TEXT') {
             self.postMessage({ status: 'progress', message: 'Loading GPU Engine...' });
             
@@ -210,10 +210,10 @@
             
             self.postMessage({ status: 'progress', message: 'Analyzing transcript...' });
             
-            const systemPrompt = "You are a clinical AI. Respond ONLY with valid raw JSON object. Do NOT add extra words or markdown blocks.";
-            const userPrompt = "Analyze this transcript: \\"" + String(payload.transcript) + "\\". Return JSON with exact keys: \\"SOAP\\": {\\"1_Signalment_Core\\": \\"\\", \\"2_3_History\\": \\"\\", \\"4_Findings\\": \\"\\", \\"5_6_7_Diagnostics\\": \\"\\", \\"8_9_Plan\\": \\"\\", \\"10_11_Takeaways_Diff\\": \\"\\"}, \\"ClientInstructions\\": [\\"\\", \\"\\", \\"\\"]";
+            const systemPrompt = "You are a clinical AI. Respond ONLY with a valid raw JSON object. Do NOT add extra words or markdown blocks.";
+            const userPrompt = "Analyze this transcript: \\"" + String(payload.transcript) + "\\". Categorize the clinical notes exactly into these groups. Return JSON with exact keys: \\"SOAP\\": {\\"1_Signalment_Core_Disease_Category\\": \\"\\", \\"2_3_History\\": \\"\\", \\"4_Findings\\": \\"\\", \\"5_6_7_Diagnostics\\": \\"\\", \\"8_9_Plan\\": \\"\\", \\"10_11_Takeaways_Differentiation\\": \\"\\"}, \\"ClientInstructions\\": [\\"\\", \\"\\", \\"\\"]";
 
-            // Temperature 0.0 + max_tokens 280 guarantees sub-6 second execution
+            // Temperature 0.0 + max_tokens 280 for sub-6 second execution
             const reply = await llmEngine.chat.completions.create({
               messages: [
                 { role: "system", content: String(systemPrompt) },
@@ -270,14 +270,14 @@
       if (status === 'reports_generated') {
         generatedData = data;
         
-        // Populate 6-part SOAP UI
+        // Populate exactly 1-11 SOAP UI
         const soap = data.SOAP || {};
-        document.getElementById('soap1').innerText = soap["1_Signalment_Core"] || "N/A";
+        document.getElementById('soap1').innerText = soap["1_Signalment_Core_Disease_Category"] || "N/A";
         document.getElementById('soap23').innerText = soap["2_3_History"] || "N/A";
         document.getElementById('soap4').innerText = soap["4_Findings"] || "N/A";
         document.getElementById('soap567').innerText = soap["5_6_7_Diagnostics"] || "N/A";
         document.getElementById('soap89').innerText = soap["8_9_Plan"] || "N/A";
-        document.getElementById('soap1011').innerText = soap["10_11_Takeaways_Diff"] || "N/A";
+        document.getElementById('soap1011').innerText = soap["10_11_Takeaways_Differentiation"] || "N/A";
         
         const inst = Array.isArray(data.ClientInstructions) ? data.ClientInstructions.map(i => `• ${i}`).join('\n') : data.ClientInstructions;
         document.getElementById('instructionsText').innerText = inst || "N/A";
@@ -357,12 +357,12 @@
       document.getElementById('pdfDate').innerText = new Date().toLocaleDateString();
       
       const soap = generatedData ? (generatedData.SOAP || {}) : {};
-      document.getElementById('pdf1').innerText = soap["1_Signalment_Core"] || "";
+      document.getElementById('pdf1').innerText = soap["1_Signalment_Core_Disease_Category"] || "";
       document.getElementById('pdf23').innerText = soap["2_3_History"] || "";
       document.getElementById('pdf4').innerText = soap["4_Findings"] || "";
       document.getElementById('pdf567').innerText = soap["5_6_7_Diagnostics"] || "";
       document.getElementById('pdf89').innerText = soap["8_9_Plan"] || "";
-      document.getElementById('pdf1011').innerText = soap["10_11_Takeaways_Diff"] || "";
+      document.getElementById('pdf1011').innerText = soap["10_11_Takeaways_Differentiation"] || "";
       
       const inst = generatedData && Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions.map(i => `• ${i}`).join('\n') : (generatedData ? generatedData.ClientInstructions : "");
       document.getElementById('pdfInstructions').innerText = inst || "";
