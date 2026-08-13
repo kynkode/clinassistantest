@@ -189,7 +189,6 @@
             self.postMessage({ status: 'progress', message: 'Transcribing audio...' });
             const output = await transcriber(payload.audioData, { chunk_length_s: 30, stride_length_s: 5 });
             
-            // --- FIX FOR HALLUCINATED SOUND TAGS ---
             let rawText = output?.text || output || "";
             // Remove anything enclosed in [] or () and clean up extra spaces
             let cleanText = rawText.replace(/\\[.*?\\]|\\(.*?\\)/g, ' ').replace(/\\s+/g, ' ').trim();
@@ -296,10 +295,13 @@
         
         mediaRecorder.onstop = async () => {
           dom.statusText.innerText = "Processing audio...";
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          
+          // Let the browser infer the audio blob type natively (Fixes Safari compatibility)
+          const audioBlob = new Blob(audioChunks); 
           const arrayBuffer = await audioBlob.arrayBuffer();
           
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          // FORCE 16000 Hz sampleRate. Whisper AI requires exactly 16kHz to understand audio.
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
           const decoded = await audioCtx.decodeAudioData(arrayBuffer);
           const rawAudio = decoded.getChannelData(0);
           
