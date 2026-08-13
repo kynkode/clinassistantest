@@ -123,7 +123,7 @@
       </div>
     </div>
     <div class="mb-6">
-      <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2">Clinical Analysis</h3>
+      <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2">Clinical SOAP Report</h3>
       <div class="text-sm space-y-2">
         <p><strong>1. Signalment & Core:</strong> <span id="pdf1"></span></p>
         <p><strong>2 & 3. History:</strong> <span id="pdf23"></span></p>
@@ -143,7 +143,7 @@
     // ==========================================
     // ⚠️ REPLACE THIS WITH YOUR GOOGLE WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGkT9IqFGok523YS1Hu9xon-U3-wNZnERCOQJrbHc-tT5809aGREjA3zWA0r26D8qsGA/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWH2UWCrSu_b6vcCxMBz12q5UVIqrkXNJ6kHTpHEcWwZQY9EzIsZubvKvemL6mkdhZ6Q/exec";
     
     let mediaRecorder = null;
     let audioChunks = [];
@@ -203,7 +203,6 @@
             self.postMessage({ status: 'progress', message: 'Loading GPU Engine...' });
             
             if (!llmEngine) {
-                // Initializing WebLLM cleanly without non-string options
                 llmEngine = await CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC", {
                   initProgressCallback: (info) => self.postMessage({ status: 'progress', message: String(info.text || 'Preparing GPU model...') })
                 });
@@ -350,8 +349,27 @@
       worker.postMessage({ type: 'PROCESS_EDITED_TEXT', payload: { transcript: text } });
     };
 
+    // Populate PDF elements helper function
+    function populatePdfTemplate() {
+      document.getElementById('pdfClinicName').innerText = document.getElementById('clinicName').value || "Unknown Clinic";
+      document.getElementById('pdfDoctorName').innerText = document.getElementById('doctorName').value || "Unknown Doctor";
+      document.getElementById('pdfLocation').innerText = dom.locationInput.value || "Not Specified";
+      document.getElementById('pdfDate').innerText = new Date().toLocaleDateString();
+      
+      const soap = generatedData ? (generatedData.SOAP || {}) : {};
+      document.getElementById('pdf1').innerText = soap["1_Signalment_Core"] || "";
+      document.getElementById('pdf23').innerText = soap["2_3_History"] || "";
+      document.getElementById('pdf4').innerText = soap["4_Findings"] || "";
+      document.getElementById('pdf567').innerText = soap["5_6_7_Diagnostics"] || "";
+      document.getElementById('pdf89').innerText = soap["8_9_Plan"] || "";
+      document.getElementById('pdf1011').innerText = soap["10_11_Takeaways_Diff"] || "";
+      
+      const inst = generatedData && Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions.map(i => `• ${i}`).join('\n') : (generatedData ? generatedData.ClientInstructions : "");
+      document.getElementById('pdfInstructions').innerText = inst || "";
+    }
+
     // --- Backend Sync Logic ---
-    async function syncToDatabase(data, actionType) {
+    async function syncToDatabase(data, actionType, pdfBase64 = null) {
       try {
         const payload = {
           action: actionType,
@@ -360,8 +378,9 @@
           clinicName: document.getElementById('clinicName').value || "Unknown Clinic",
           doctorName: document.getElementById('doctorName').value || "Unknown Doctor",
           patientEmail: document.getElementById('patientEmail').value || "",
-          SOAP: data.SOAP,
-          ClientInstructions: data.ClientInstructions
+          SOAP: data ? data.SOAP : {},
+          ClientInstructions: data ? data.ClientInstructions : "",
+          pdfBase64: pdfBase64
         };
 
         const res = await fetch(APPS_SCRIPT_URL, {
@@ -377,32 +396,37 @@
       }
     }
 
+    // --- Email with PDF Attachment ---
     dom.emailBtn.onclick = async () => {
-      if (!document.getElementById('patientEmail').value) return alert("Enter patient email first!");
-      dom.emailBtn.innerText = "Sending...";
-      await syncToDatabase(generatedData, "email");
-      dom.emailBtn.innerText = "📧 Email Sent!";
+      const email = document.getElementById('patientEmail').value;
+      if (!email) return alert("Enter patient email first!");
+      
+      dom.emailBtn.innerText = "Attaching PDF & Sending...";
+      dom.emailBtn.disabled = true;
+
+      try {
+        populatePdfTemplate();
+        
+        // Render PDF as Base64 String
+        const pdfBase64 = await html2pdf()
+          .set({ margin: 0.5, filename: 'Consultation_Report.pdf' })
+          .from(document.getElementById('pdfTemplate'))
+          .outputPdf('datauristring');
+
+        await syncToDatabase(generatedData, "email", pdfBase64);
+        dom.emailBtn.innerText = "📧 Email Sent!";
+      } catch (err) {
+        alert("Email sending failed: " + err.message);
+        dom.emailBtn.innerText = "📧 Email";
+      } finally {
+        dom.emailBtn.disabled = false;
+      }
     };
 
-    // --- PDF Logic ---
+    // --- Direct PDF Download ---
     dom.pdfBtn.onclick = () => {
       if (!generatedData) return;
-      document.getElementById('pdfClinicName').innerText = document.getElementById('clinicName').value || "Unknown Clinic";
-      document.getElementById('pdfDoctorName').innerText = document.getElementById('doctorName').value || "Unknown Doctor";
-      document.getElementById('pdfLocation').innerText = dom.locationInput.value || "Not Specified";
-      document.getElementById('pdfDate').innerText = new Date().toLocaleDateString();
-      
-      const soap = generatedData.SOAP || {};
-      document.getElementById('pdf1').innerText = soap["1_Signalment_Core"] || "";
-      document.getElementById('pdf23').innerText = soap["2_3_History"] || "";
-      document.getElementById('pdf4').innerText = soap["4_Findings"] || "";
-      document.getElementById('pdf567').innerText = soap["5_6_7_Diagnostics"] || "";
-      document.getElementById('pdf89').innerText = soap["8_9_Plan"] || "";
-      document.getElementById('pdf1011').innerText = soap["10_11_Takeaways_Diff"] || "";
-      
-      const inst = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions.map(i => `• ${i}`).join('\n') : generatedData.ClientInstructions;
-      document.getElementById('pdfInstructions').innerText = inst || "";
-
+      populatePdfTemplate();
       html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplate')).save();
     };
   </script>
