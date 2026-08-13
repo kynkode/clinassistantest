@@ -143,7 +143,7 @@
     // ==========================================
     // ⚠️ REPLACE THIS WITH YOUR GOOGLE WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCd1wAnVNB49iDNZhsqSFe6dxAPTYNfy4TMSshTmgLoRZFbwKdJmxBPx99nCs45kOFqQ/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGkT9IqFGok523YS1Hu9xon-U3-wNZnERCOQJrbHc-tT5809aGREjA3zWA0r26D8qsGA/exec";
     
     let mediaRecorder = null;
     let audioChunks = [];
@@ -291,7 +291,7 @@
         dom.progress.classList.add('hidden');
         
         // Sync to backend
-        dom.statusText.innerText = "Analysis complete! Syncing to database...";
+        dom.statusText.innerText = "Analysis complete! Saving to conversation log...";
         syncToDatabase(data, "save");
       }
     };
@@ -371,7 +371,7 @@
           redirect: 'follow'
         });
         
-        if (res.ok) dom.statusText.innerText = "Saved to Google Sheets!";
+        if (res.ok) dom.statusText.innerText = "Saved to conversation log!";
       } catch (err) {
         dom.statusText.innerText = `Sync status: ${err.message}`;
       }
