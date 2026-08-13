@@ -6,6 +6,7 @@
   <title>Consultation AI Assistant</title>
   <link rel="icon" href="data:,">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- HTML to PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
@@ -18,7 +19,6 @@
       background-size: 200% 100%;
       animation: shimmer 2s infinite linear;
     }
-
     @keyframes wave-bars {
       0%, 100% { height: 4px; }
       50% { height: 14px; }
@@ -27,35 +27,29 @@
     .animate-wave-2 { animation: wave-bars 0.8s infinite ease-in-out 0.15s; }
     .animate-wave-3 { animation: wave-bars 0.8s infinite ease-in-out 0.3s; }
     .animate-wave-4 { animation: wave-bars 0.8s infinite ease-in-out 0.45s; }
-
     @keyframes pulse-glow {
       0%, 100% { box-shadow: 0 0 12px rgba(99, 102, 241, 0.2); }
       50% { box-shadow: 0 0 22px rgba(99, 102, 241, 0.6); }
     }
-    .status-glow {
-      animation: pulse-glow 2s infinite ease-in-out;
-    }
+    .status-glow { animation: pulse-glow 2s infinite ease-in-out; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
 
-  <div class="max-w-4xl mx-auto space-y-6">
+  <div class="max-w-5xl mx-auto space-y-6">
     
-    <!-- Settings & Letterhead Configuration -->
+    <!-- Settings Section -->
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl w-full">
-      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Letterhead & Location Settings</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Settings & Patient Info</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <input type="text" id="clinicName" placeholder="Clinic / Hospital Name" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 transition" value="General Hospital">
+        <input type="text" id="manualLocation" placeholder="Location (e.g. City, Region)" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 transition">
         <input type="text" id="doctorName" placeholder="Provider Name" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 transition" value="Dr. John Doe">
         <input type="email" id="patientEmail" placeholder="Patient Email Address" class="w-full bg-slate-700 text-sm border-none rounded-lg p-3 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 transition">
       </div>
-      <div class="text-xs text-slate-400 font-mono flex items-start sm:items-center gap-2 flex-col sm:flex-row">
-        <span>📍 Detected Clinic Location:</span>
-        <span id="locationData" class="text-emerald-400 font-semibold break-words">Detecting...</span>
-      </div>
     </div>
 
-    <!-- Header & Controls with Animated Status Header -->
+    <!-- Controls & Status -->
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative overflow-hidden">
       
       <div id="progressBarContainer" class="absolute top-0 left-0 w-full h-1 bg-slate-700/50 overflow-hidden hidden">
@@ -63,15 +57,11 @@
       </div>
 
       <div class="w-full lg:w-auto space-y-2">
-        <div class="flex items-center gap-3 flex-wrap">
-          <h1 class="text-2xl font-bold text-indigo-400">Consultation Listener</h1>
-          
-          <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-700/80 border border-slate-600 text-slate-300 transition-all duration-300">
-            <span id="statusIcon" class="relative flex h-2.5 w-2.5 items-center justify-center">
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
-            </span>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-indigo-400">AI Local Listener</h1>
+          <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-700/80 border border-slate-600 text-slate-300">
+            <span id="statusIcon"><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span></span>
             <span id="statusBadgeText" class="font-mono text-[11px] uppercase tracking-wider">Ready</span>
-            
             <div id="audioWave" class="hidden flex items-end gap-0.5 h-3 ml-1">
               <span class="w-0.5 bg-rose-400 animate-wave-1 rounded-full"></span>
               <span class="w-0.5 bg-rose-400 animate-wave-2 rounded-full"></span>
@@ -80,70 +70,48 @@
             </div>
           </div>
         </div>
-
-        <p class="text-xs text-slate-400 font-mono transition-all duration-300 flex items-center gap-2" id="statusText">
-          Status: Ready to record
-        </p>
+        <p class="text-xs text-slate-400 font-mono" id="statusText">System ready. Waiting for input...</p>
       </div>
 
-      <div class="flex flex-col sm:flex-row flex-wrap gap-3 w-full lg:w-auto justify-start lg:justify-end">
-        <button id="recordBtn" class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-xl transition shadow-lg active:scale-95 text-sm flex items-center justify-center gap-2">
-          <span>🎙️</span> Record
-        </button>
-        <button id="stopBtn" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-rose-600 hover:bg-rose-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
-          <span>⏹️</span> Stop
-        </button>
-        <button id="generateBtn" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
-          <span>⚙️</span> Generate AI Report
-        </button>
-        <button id="downloadPdfBtn" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
-          <span>📄</span> PDF
-        </button>
-        <button id="emailBtn" disabled class="w-full sm:w-auto px-6 py-3 sm:py-2 bg-purple-600 hover:bg-purple-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center justify-center gap-2">
-          <span>📧</span> Email Patient
-        </button>
+      <div class="flex flex-wrap gap-3 w-full lg:w-auto justify-start lg:justify-end">
+        <button id="recordBtn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-xl transition shadow-lg text-sm flex items-center gap-2">🎙️ Record</button>
+        <button id="stopBtn" disabled class="px-6 py-2 bg-rose-600 hover:bg-rose-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center gap-2">⏹️ Stop</button>
+        <button id="generateBtn" disabled class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center gap-2">⚙️ Analyze Report</button>
+        <button id="downloadPdfBtn" disabled class="px-6 py-2 bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center gap-2">📄 PDF</button>
+        <button id="emailBtn" disabled class="px-6 py-2 bg-purple-600 hover:bg-purple-500 font-semibold rounded-xl transition shadow-lg opacity-50 cursor-not-allowed text-sm flex items-center gap-2">📧 Email</button>
       </div>
     </div>
 
-    <!-- Editable Live Transcript Box -->
-    <div id="transcriptCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg flex flex-col w-full transition-all duration-300">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-          <span>Editable Transcript</span>
-        </h2>
-        <span class="text-[10px] text-slate-500">Edit text before generating report</span>
+    <!-- Transcript Box -->
+    <div id="transcriptCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Live Transcript</h2>
+        <span class="text-[10px] text-slate-500">Edit manually before generating report</span>
       </div>
-      <textarea id="transcriptText" class="w-full bg-slate-700 text-sm text-slate-200 rounded-xl p-4 min-h-[120px] focus:ring-2 focus:ring-indigo-500 outline-none resize-y placeholder-slate-500 transition" placeholder="Audio transcript will appear here. You can manually type or edit this text before clicking 'Generate AI Report'..."></textarea>
+      <textarea id="transcriptText" class="w-full bg-slate-700 text-sm text-slate-200 rounded-xl p-4 min-h-[120px] focus:ring-2 focus:ring-indigo-500 outline-none resize-y placeholder-slate-500 transition" placeholder="Transcription will appear here..."></textarea>
     </div>
 
     <!-- Output Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full" id="reportUI">
-      
-      <!-- SOAP Clinical Report -->
-      <div id="soapCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4 w-full transition-all duration-300">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-700 pb-2 flex items-center justify-between">
-          <span>Clinical SOAP Report</span>
-        </h2>
-        <div class="space-y-3 text-sm text-slate-300" id="soapContainer">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="reportUI">
+      <div id="soapCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-700 pb-2">Clinical SOAP Note</h2>
+        <div class="space-y-3 text-sm text-slate-300">
           <div class="break-words"><span class="font-bold text-slate-100">S:</span> <span id="soapS">-</span></div>
           <div class="break-words"><span class="font-bold text-slate-100">O:</span> <span id="soapO">-</span></div>
           <div class="break-words"><span class="font-bold text-slate-100">A:</span> <span id="soapA">-</span></div>
           <div class="break-words"><span class="font-bold text-slate-100">P:</span> <span id="soapP">-</span></div>
         </div>
       </div>
-
-      <!-- Client/Patient Instructions -->
-      <div id="instructionsCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4 w-full transition-all duration-300">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-700 pb-2">Client Discharge Instructions</h2>
-        <p id="instructionsText" class="text-sm text-slate-300 leading-relaxed min-h-[100px] break-words whitespace-pre-wrap">-</p>
+      <div id="instructionsCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-700 pb-2">Patient Instructions</h2>
+        <p id="instructionsText" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">-</p>
       </div>
-
     </div>
   </div>
 
-  <!-- Off-screen Container for PDF Rendering -->
+  <!-- Hidden PDF Template -->
   <div id="pdfTemplate" class="fixed -left-[9999px] top-0 bg-white text-black p-10 w-[800px] pointer-events-none">
-    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end gap-4">
+    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
       <div>
         <h1 class="text-3xl font-bold text-slate-900" id="pdfClinicName">Clinic Name</h1>
         <h2 class="text-lg text-slate-700 mt-1" id="pdfDoctorName">Doctor Name</h2>
@@ -153,7 +121,6 @@
         <p id="pdfDate">Date</p>
       </div>
     </div>
-    
     <div class="mb-6">
       <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2">SOAP Note</h3>
       <div class="text-sm space-y-3">
@@ -163,7 +130,6 @@
         <p><strong>Plan:</strong> <span id="pdfP"></span></p>
       </div>
     </div>
-
     <div>
       <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2">Discharge Instructions</h3>
       <p class="text-sm whitespace-pre-wrap" id="pdfInstructions"></p>
@@ -171,128 +137,32 @@
   </div>
 
   <script type="module">
-    // --- Configuration ---
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcNrVOjs91WKq1RfCVTvs0hgW1s3HThNWiRZ7u3Wb0SfEfmf4EBUwx_6SJ8b_KaxCufw/exec";
+    // ==========================================
+    // ⚠️ REPLACE THIS WITH YOUR GOOGLE WEB APP URL
+    // ==========================================
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_API_KEY_HERE/exec";
+    
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let generatedData = null;
 
-    let detectedLocation = "Unknown Location";
+    const dom = {
+      statusText: document.getElementById('statusText'),
+      badge: document.getElementById('statusBadge'),
+      badgeText: document.getElementById('statusBadgeText'),
+      icon: document.getElementById('statusIcon'),
+      wave: document.getElementById('audioWave'),
+      progress: document.getElementById('progressBarContainer'),
+      transcript: document.getElementById('transcriptText'),
+      recordBtn: document.getElementById('recordBtn'),
+      stopBtn: document.getElementById('stopBtn'),
+      genBtn: document.getElementById('generateBtn'),
+      pdfBtn: document.getElementById('downloadPdfBtn'),
+      emailBtn: document.getElementById('emailBtn'),
+      locationInput: document.getElementById('manualLocation')
+    };
 
-    // --- DOM Elements ---
-    const statusTextElem = document.getElementById('statusText');
-    const statusBadge = document.getElementById('statusBadge');
-    const statusBadgeText = document.getElementById('statusBadgeText');
-    const statusIconContainer = document.getElementById('statusIcon');
-    const progressBarContainer = document.getElementById('progressBarContainer');
-    const audioWave = document.getElementById('audioWave');
-    const transcriptCard = document.getElementById('transcriptCard');
-    const soapCard = document.getElementById('soapCard');
-    const recordBtn = document.getElementById('recordBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const generateBtn = document.getElementById('generateBtn');
-    const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-    const emailBtn = document.getElementById('emailBtn');
-    const transcriptBox = document.getElementById('transcriptText');
-
-    // --- UI Status Animations ---
-    function updateStatusAnimations(text) {
-      const lower = text.toLowerCase();
-      
-      progressBarContainer.classList.add('hidden');
-      audioWave.classList.add('hidden');
-      transcriptCard.classList.remove('status-glow', 'border-indigo-500');
-      soapCard.classList.remove('status-glow', 'border-indigo-500');
-
-      if (lower.includes('ready') || lower.includes('complete') || lower.includes('saved') || lower.includes('sent')) {
-        statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 transition-all duration-300";
-        statusBadgeText.innerText = lower.includes('saved') || lower.includes('sent') || lower.includes('complete') ? "Success" : "Ready";
-        statusIconContainer.innerHTML = `
-          <span class="relative flex h-2.5 w-2.5">
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
-          </span>
-        `;
-      } 
-      else if (lower.includes('recording')) {
-        audioWave.classList.remove('hidden');
-        statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-400 transition-all duration-300";
-        statusBadgeText.innerText = "Recording";
-        statusIconContainer.innerHTML = `
-          <span class="relative flex h-2.5 w-2.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-          </span>
-        `;
-      } 
-      else if (lower.includes('loading') || lower.includes('analyzing') || lower.includes('transcribing') || lower.includes('decoding') || lower.includes('preparing') || lower.includes('sending') || lower.includes('syncing') || lower.includes('unloading')) {
-        progressBarContainer.classList.remove('hidden');
-        
-        if (lower.includes('transcribing')) {
-          transcriptCard.classList.add('status-glow', 'border-indigo-500');
-        } else if (lower.includes('analyzing')) {
-          soapCard.classList.add('status-glow', 'border-indigo-500');
-        }
-
-        statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 transition-all duration-300";
-        
-        let label = "Processing";
-        if (lower.includes('loading')) label = "Loading Model";
-        else if (lower.includes('transcribing') || lower.includes('decoding')) label = "Transcribing";
-        else if (lower.includes('analyzing')) label = "AI Thinking";
-        else if (lower.includes('syncing') || lower.includes('sending')) label = "Syncing DB";
-        
-        statusBadgeText.innerText = label;
-        statusIconContainer.innerHTML = `
-          <svg class="animate-spin h-3.5 w-3.5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        `;
-      } 
-      else if (lower.includes('error') || lower.includes('failed')) {
-        statusBadge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 border border-rose-500/50 text-rose-300 transition-all duration-300";
-        statusBadgeText.innerText = "Error";
-        statusIconContainer.innerHTML = `
-          <span class="relative flex h-2.5 w-2.5">
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-          </span>
-        `;
-      }
-    }
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList' || mutation.type === 'characterData') {
-          updateStatusAnimations(statusTextElem.innerText || statusTextElem.textContent);
-        }
-      });
-    });
-    observer.observe(statusTextElem, { childList: true, characterData: true, subtree: true });
-
-    // --- Location Fetch ---
-    async function fetchLocation() {
-      const locationElem = document.getElementById('locationData');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-      try {
-        const response = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const data = await response.json();
-        if (data.error) throw new Error(data.reason || "IP lookup error");
-
-        detectedLocation = `${data.city || 'Unknown City'}, ${data.region || ''}, ${data.country_name || ''}`.replace(/^,\s*|,\s*$/g, '');
-        locationElem.innerText = detectedLocation;
-      } catch (err) {
-        detectedLocation = "Default Clinic Location";
-        locationElem.innerText = "Location unavailable (using default)";
-        locationElem.classList.remove('text-emerald-400');
-        locationElem.classList.add('text-amber-400');
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }
-    fetchLocation();
-
-    // --- Web Worker for AI Processing (Whisper + Llama) ---
+    // The AI Web Worker (Executes in background to prevent UI freeze)
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -304,88 +174,47 @@
       self.onmessage = async (e) => {
         const { type, payload } = e.data;
         try {
+          // 1. Load Whisper ASR
           if (type === 'LOAD_WHISPER') {
-            self.postMessage({ status: 'progress', message: 'Loading Whisper Speech Model (CPU / WASM thread)...' });
-            
+            self.postMessage({ status: 'progress', message: 'Loading Whisper Speech Model...' });
             transcriber = await pipeline('automatic-speech-recognition', 'onnx-community/whisper-tiny.en', {
               device: 'wasm',
-              dtype: {
-                encoder_model: 'q8',
-                decoder_model_merged: 'q8',
-              }
+              dtype: { encoder_model: 'q8', decoder_model_merged: 'q8' }
             });
             self.postMessage({ status: 'ready_whisper' });
           }
           
+          // 2. Transcribe Audio
           if (type === 'TRANSCRIBE') {
-            self.postMessage({ status: 'progress', message: 'Transcribing audio on CPU...' });
-            const output = await transcriber(payload.audioData, { 
-              chunk_length_s: 30, 
-              stride_length_s: 5
-            });
-            const resultText = typeof output === 'string' ? output : (output?.text || '');
-            self.postMessage({ status: 'transcribed', text: String(resultText) });
+            self.postMessage({ status: 'progress', message: 'Transcribing audio...' });
+            const output = await transcriber(payload.audioData, { chunk_length_s: 30, stride_length_s: 5 });
+            self.postMessage({ status: 'transcribed', text: output?.text || output });
           }
           
-          if (type === 'UNLOAD_WHISPER') {
-            if (transcriber?.dispose) await transcriber.dispose();
-            transcriber = null;
-            self.postMessage({ status: 'unloaded_whisper' });
-          }
-          
+          // 3. Run WebLLM Analysis
           if (type === 'PROCESS_EDITED_TEXT') {
-            const rawTranscript = String(payload?.transcript || '').trim();
-            if (!rawTranscript) {
-              throw new Error("Transcript input is empty.");
-            }
-
-            self.postMessage({ status: 'progress', message: 'Loading Llama 3.2 1B Engine (100% WebGPU)...' });
+            self.postMessage({ status: 'progress', message: 'Loading LLM Engine (Llama 3.2)...' });
             if (!llmEngine) {
                 llmEngine = await CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC", {
-                  initProgressCallback: (info) => {
-                    const msg = typeof info === 'string' ? info : (info?.text || 'Loading GPU model...');
-                    self.postMessage({ status: 'progress', message: String(msg) });
-                  }
+                  initProgressCallback: (info) => self.postMessage({ status: 'progress', message: info.text || 'Loading GPU model...' })
                 });
             }
             
-            self.postMessage({ status: 'progress', message: 'Analyzing transcript on GPU...' });
-            const prompt = \`Analyze this doctor-patient conversation transcript:
-"\${rawTranscript}"
-
-Return a strictly formatted JSON object with two top-level keys:
-1. "SOAP": An object with keys "Subjective", "Objective", "Assessment", "Plan". Keep each section extremely concise (1-2 clear sentences).
-2. "ClientInstructions": A concise home-care guide for the patient/client (3-4 brief bullet points).
-
-Output MUST be valid JSON only.\`;
+            self.postMessage({ status: 'progress', message: 'Analyzing transcript...' });
+            const prompt = \`Analyze this consultation transcript: "\${payload.transcript}". Return ONLY a JSON object with: 1. "SOAP" (Subjective, Objective, Assessment, Plan) and 2. "ClientInstructions" (array of 3 short strings).\`;
 
             const reply = await llmEngine.chat.completions.create({
-              messages: [
-                { role: "system", content: "You are a concise clinical documentation specialist. Output valid JSON only." },
-                { role: "user", content: String(prompt) }
-              ],
-              max_tokens: 350
+              messages: [{ role: "system", content: "You output strictly valid JSON." }, { role: "user", content: prompt }],
+              max_tokens: 400,
+              response_format: { type: "json_object" }
             });
 
-            let contentStr = reply?.choices?.[0]?.message?.content;
-            if (typeof contentStr !== 'string') {
-              contentStr = JSON.stringify(contentStr || {});
-            }
-
+            const contentStr = reply.choices[0].message.content;
             const jsonMatch = contentStr.match(/\\{[\\s\\S]*\\}/);
-            const cleanJsonStr = jsonMatch ? jsonMatch[0] : contentStr;
-
-            const parsed = JSON.parse(cleanJsonStr);
-            self.postMessage({ status: 'reports_generated', data: parsed });
-          }
-          
-          if (type === 'UNLOAD_LLM') {
-            if (llmEngine) await llmEngine.unload();
-            llmEngine = null;
-            self.postMessage({ status: 'unloaded_llm' });
+            self.postMessage({ status: 'reports_generated', data: JSON.parse(jsonMatch ? jsonMatch[0] : contentStr) });
           }
         } catch (err) {
-          self.postMessage({ status: 'error', error: String(err?.message || err) });
+          self.postMessage({ status: 'error', error: err.message });
         }
       };
     `;
@@ -393,33 +222,28 @@ Output MUST be valid JSON only.\`;
     const blob = new Blob([workerCode], { type: 'application/javascript' });
     const worker = new Worker(URL.createObjectURL(blob), { type: 'module' });
 
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let generatedData = null;
-
-    // --- Worker Communication Handling ---
     worker.onmessage = async (e) => {
       const { status, message, text, data, error } = e.data;
 
       if (error) {
-        statusTextElem.innerText = `Error: ${error}`;
-        console.error("Worker Error:", error);
+        dom.statusText.innerText = `Error: ${error}`;
+        dom.progress.classList.add('hidden');
         return;
       }
 
-      if (status === 'progress') statusTextElem.innerText = message;
-      
-      if (status === 'ready_whisper') {
-        statusTextElem.innerText = "Recording conversation...";
+      if (status === 'progress') {
+        dom.statusText.innerText = message;
+        dom.progress.classList.remove('hidden');
       }
 
+      if (status === 'ready_whisper') dom.statusText.innerText = "Recording conversation...";
+
       if (status === 'transcribed') {
-        transcriptBox.value = text;
-        statusTextElem.innerText = "Transcription complete. You may edit the text now.";
-        worker.postMessage({ type: 'UNLOAD_WHISPER' });
-        
-        generateBtn.disabled = false;
-        generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        dom.transcript.value = text;
+        dom.statusText.innerText = "Transcription complete. Edit text if needed.";
+        dom.progress.classList.add('hidden');
+        dom.genBtn.disabled = false;
+        dom.genBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       }
 
       if (status === 'reports_generated') {
@@ -431,202 +255,126 @@ Output MUST be valid JSON only.\`;
         document.getElementById('soapA').innerText = data.SOAP?.Assessment || "N/A";
         document.getElementById('soapP').innerText = data.SOAP?.Plan || "N/A";
         
-        // Handle instructions formatting (bullet points etc.)
-        let instructions = data.ClientInstructions || "N/A";
-        if (Array.isArray(instructions)) {
-            instructions = instructions.map(i => `• ${i}`).join('\n');
-        }
-        document.getElementById('instructionsText').innerText = instructions;
+        const inst = Array.isArray(data.ClientInstructions) ? data.ClientInstructions.map(i => `• ${i}`).join('\n') : data.ClientInstructions;
+        document.getElementById('instructionsText').innerText = inst || "N/A";
 
-        // Enable buttons
-        downloadPdfBtn.disabled = false;
-        downloadPdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        emailBtn.disabled = false;
-        emailBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-
-        statusTextElem.innerText = "Unloading reasoning engine...";
-        worker.postMessage({ type: 'UNLOAD_LLM' });
-      }
-
-      if (status === 'unloaded_llm') {
-        statusTextElem.innerText = "Syncing record to DB...";
-        await syncToDatabase(generatedData);
+        // Enable Actions
+        dom.pdfBtn.disabled = false;
+        dom.pdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        dom.emailBtn.disabled = false;
+        dom.emailBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        dom.progress.classList.add('hidden');
+        
+        // Sync to backend
+        dom.statusText.innerText = "Analysis complete. Syncing to database...";
+        syncToDatabase(data, "save");
       }
     };
 
-    // --- Audio Recording Logic ---
-    const startRecording = async () => {
+    // --- Audio Logic ---
+    dom.recordBtn.onclick = async () => {
       try {
         audioChunks = [];
-        transcriptBox.value = "";
-        generateBtn.disabled = true;
-        generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        downloadPdfBtn.disabled = true;
-        downloadPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        emailBtn.disabled = true;
-        emailBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
+        dom.transcript.value = "";
+        dom.genBtn.disabled = true;
+        
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
         
         mediaRecorder.onstop = async () => {
-          statusTextElem.innerText = "Decoding audio data...";
-          
+          dom.statusText.innerText = "Processing audio...";
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           const arrayBuffer = await audioBlob.arrayBuffer();
-
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          const audioCtx = new AudioContextClass();
-          const audioBufferDecoded = await audioCtx.decodeAudioData(arrayBuffer);
           
-          const rawAudio = audioBufferDecoded.getChannelData(0);
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+          const rawAudio = decoded.getChannelData(0);
+          
           worker.postMessage({ type: 'TRANSCRIBE', payload: { audioData: rawAudio } }, [rawAudio.buffer]);
-          
-          stream.getTracks().forEach(track => track.stop());
-          await audioCtx.close();
+          stream.getTracks().forEach(t => t.stop());
+          audioCtx.close();
         };
 
         worker.postMessage({ type: 'LOAD_WHISPER' });
         mediaRecorder.start();
-
-        recordBtn.disabled = true;
-        recordBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        stopBtn.disabled = false;
-        stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        
+        dom.wave.classList.remove('hidden');
+        dom.recordBtn.disabled = true;
+        dom.stopBtn.disabled = false;
+        dom.stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       } catch (err) {
-        statusTextElem.innerText = `Microphone Error: ${err.message}`;
+        dom.statusText.innerText = `Mic Error: ${err.message}`;
       }
     };
 
-    const stopRecording = () => {
-      if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        mediaRecorder.stop();
-        recordBtn.disabled = false;
-        recordBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        stopBtn.disabled = true;
-        stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      }
+    dom.stopBtn.onclick = () => {
+      if (mediaRecorder) mediaRecorder.stop();
+      dom.wave.classList.add('hidden');
+      dom.recordBtn.disabled = false;
+      dom.stopBtn.disabled = true;
+      dom.stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
     };
 
-    // --- Generate Report Action ---
-    const processEditedTranscript = () => {
-      const editedText = transcriptBox.value.trim();
-      if (!editedText) return alert("Transcript is empty!");
-      
-      generateBtn.disabled = true;
-      generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
-      
-      worker.postMessage({ 
-        type: 'PROCESS_EDITED_TEXT', 
-        payload: { transcript: editedText } 
-      });
+    dom.genBtn.onclick = () => {
+      const text = dom.transcript.value.trim();
+      if (!text) return alert("Transcript empty");
+      dom.genBtn.disabled = true;
+      worker.postMessage({ type: 'PROCESS_EDITED_TEXT', payload: { transcript: text } });
     };
 
-    // --- Backend Integrations ---
-    async function syncToDatabase(payloadData) {
+    // --- Backend Sync Logic ---
+    async function syncToDatabase(data, actionType) {
       try {
-        const response = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" }, // Standard for GAS CORS prevention
-          body: JSON.stringify({
-            timestamp: new Date().toISOString(),
-            Location: detectedLocation,
-            ...payloadData
-          }),
-          redirect: "follow" // CRITICAL for handling GAS 302 redirects
+        const payload = {
+          action: actionType,
+          timestamp: new Date().toISOString(),
+          Location: dom.locationInput.value || "Not Specified",
+          clinicName: document.getElementById('clinicName').value || "Unknown Clinic",
+          doctorName: document.getElementById('doctorName').value || "Unknown Doctor",
+          patientEmail: document.getElementById('patientEmail').value || "",
+          SOAP: data.SOAP,
+          ClientInstructions: data.ClientInstructions
+        };
+
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+          redirect: 'follow'
         });
         
-        if (!response.ok) throw new Error("Network response was not ok");
-        statusTextElem.innerText = "Successfully saved to DB!";
+        if (res.ok) dom.statusText.innerText = "Successfully saved to Database!";
       } catch (err) {
-        statusTextElem.innerText = `Sync failed: ${err.message}`;
+        dom.statusText.innerText = `Sync failed: ${err.message}`;
       }
     }
 
-    const sendEmailToPatient = async () => {
-      const emailInput = document.getElementById('patientEmail').value.trim();
-      if (!emailInput) {
-        alert("Please enter a valid Patient Email Address in the settings above.");
-        return;
-      }
-      if (!generatedData) return;
-
-      const originalText = emailBtn.innerHTML;
-      emailBtn.innerHTML = "Sending...";
-      emailBtn.disabled = true;
-      statusTextElem.innerText = "Preparing and sending email to patient...";
-
-      try {
-        const response = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "email",
-            patientEmail: emailInput,
-            clinicName: document.getElementById('clinicName').value || "Clinic Name",
-            doctorName: document.getElementById('doctorName').value || "Doctor Name",
-            Location: detectedLocation,
-            SOAP: generatedData.SOAP,
-            ClientInstructions: generatedData.ClientInstructions
-          }),
-          redirect: "follow" // CRITICAL for handling GAS 302 redirects
-        });
-        
-        const result = await response.json();
-        if(result.status === "success") {
-           statusTextElem.innerText = "Email sent and recorded to DB successfully!";
-        } else {
-           throw new Error(result.message || "Unknown server error");
-        }
-      } catch (err) {
-        statusTextElem.innerText = `Email failed: ${err.message}`;
-      } finally {
-        emailBtn.innerHTML = originalText;
-        emailBtn.disabled = false;
-      }
+    dom.emailBtn.onclick = async () => {
+      if (!document.getElementById('patientEmail').value) return alert("Enter patient email first!");
+      dom.emailBtn.innerText = "Sending...";
+      await syncToDatabase(generatedData, "email");
+      dom.emailBtn.innerText = "📧 Email Sent!";
     };
 
-    // --- PDF Generation ---
-    const downloadPDF = () => {
+    // --- PDF Logic ---
+    dom.pdfBtn.onclick = () => {
       if (!generatedData) return;
-
-      document.getElementById('pdfClinicName').innerText = document.getElementById('clinicName').value || "Clinic Name";
-      document.getElementById('pdfDoctorName').innerText = document.getElementById('doctorName').value || "Doctor Name";
-      document.getElementById('pdfLocation').innerText = detectedLocation;
-      document.getElementById('pdfDate').innerText = new Date().toLocaleString();
+      document.getElementById('pdfClinicName').innerText = document.getElementById('clinicName').value || "Unknown Clinic";
+      document.getElementById('pdfDoctorName').innerText = document.getElementById('doctorName').value || "Unknown Doctor";
+      document.getElementById('pdfLocation').innerText = dom.locationInput.value || "Not Specified";
+      document.getElementById('pdfDate').innerText = new Date().toLocaleDateString();
       
-      document.getElementById('pdfS').innerText = generatedData.SOAP?.Subjective || "N/A";
-      document.getElementById('pdfO').innerText = generatedData.SOAP?.Objective || "N/A";
-      document.getElementById('pdfA').innerText = generatedData.SOAP?.Assessment || "N/A";
-      document.getElementById('pdfP').innerText = generatedData.SOAP?.Plan || "N/A";
+      document.getElementById('pdfS').innerText = generatedData.SOAP?.Subjective || "";
+      document.getElementById('pdfO').innerText = generatedData.SOAP?.Objective || "";
+      document.getElementById('pdfA').innerText = generatedData.SOAP?.Assessment || "";
+      document.getElementById('pdfP').innerText = generatedData.SOAP?.Plan || "";
       
-      let instructions = generatedData.ClientInstructions || "N/A";
-      if (Array.isArray(instructions)) {
-          instructions = instructions.map(i => `• ${i}`).join('\n');
-      }
-      document.getElementById('pdfInstructions').innerText = instructions;
+      const inst = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions.map(i => `• ${i}`).join('\n') : generatedData.ClientInstructions;
+      document.getElementById('pdfInstructions').innerText = inst || "";
 
-      const element = document.getElementById('pdfTemplate');
-
-      const opt = {
-        margin:       0.5,
-        filename:     `Clinical_Report_${new Date().getTime()}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-
-      html2pdf().set(opt).from(element).save();
+      html2pdf().set({ margin: 0.5, filename: 'Report.pdf' }).from(document.getElementById('pdfTemplate')).save();
     };
-
-    // --- Event Listeners ---
-    recordBtn.addEventListener('click', startRecording);
-    stopBtn.addEventListener('click', stopRecording);
-    generateBtn.addEventListener('click', processEditedTranscript);
-    downloadPdfBtn.addEventListener('click', downloadPDF);
-    emailBtn.addEventListener('click', sendEmailToPatient);
   </script>
 </body>
 </html>
