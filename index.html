@@ -141,7 +141,7 @@
 
   <script type="module">
     // ==========================================
-    // ⚠️ REPLACE THIS WITH YOUR GOOGLE WEB APP URL
+    // ⚠️ GOOGLE WEB APP URL
     // ==========================================
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyeJKQP5RaeTFpJSLRomA1uFQobyOQ_NV3NYlCaaWdBpA2AEXp9atibA7eYCSG26KxtvQ/exec";
     
@@ -165,7 +165,7 @@
       locationInput: document.getElementById('manualLocation')
     };
 
-    // AI Web Worker with Control Character Sanitizer Fix
+    // AI Web Worker with Error-Proof JSON Parsing Fix
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -226,19 +226,10 @@
             const jsonMatch = contentStr.match(/\\{[\\s\\S]*\\}/);
             let rawJson = jsonMatch ? jsonMatch[0] : contentStr;
 
-            // Escape control characters before JSON.parse
-            const sanitizedJson = rawJson.replace(/[\\u0000-\\u001F]/g, (match) => {
-              switch (match) {
-                case '\\n': return '\\\\n';
-                case '\\r': return '\\\\r';
-                case '\\t': return '\\\\t';
-                case '\\b': return '\\\\b';
-                case '\\f': return '\\\\f';
-                default: return '';
-              }
-            });
+            // FIX: Flatten line breaks/control characters to a single line to prevent position 1 parsing crashes
+            const safeJson = rawJson.replace(/[\\n\\r\\t]+/g, ' ');
 
-            const parsedData = JSON.parse(sanitizedJson);
+            const parsedData = JSON.parse(safeJson);
             self.postMessage({ status: 'reports_generated', data: parsedData });
           }
         } catch (err) {
