@@ -162,7 +162,7 @@
       locationInput: document.getElementById('manualLocation')
     };
 
-    // The AI Web Worker (Executes in background to prevent UI freeze)
+    // The AI Web Worker
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -188,7 +188,13 @@
           if (type === 'TRANSCRIBE') {
             self.postMessage({ status: 'progress', message: 'Transcribing audio...' });
             const output = await transcriber(payload.audioData, { chunk_length_s: 30, stride_length_s: 5 });
-            self.postMessage({ status: 'transcribed', text: output?.text || output });
+            
+            // --- FIX FOR HALLUCINATED SOUND TAGS ---
+            let rawText = output?.text || output || "";
+            // Remove anything enclosed in [] or () and clean up extra spaces
+            let cleanText = rawText.replace(/\\[.*?\\]|\\(.*?\\)/g, ' ').replace(/\\s+/g, ' ').trim();
+            
+            self.postMessage({ status: 'transcribed', text: cleanText });
           }
           
           // 3. Run WebLLM Analysis
@@ -240,10 +246,16 @@
 
       if (status === 'transcribed') {
         dom.transcript.value = text;
-        dom.statusText.innerText = "Transcription complete. Edit text if needed.";
         dom.progress.classList.add('hidden');
         dom.genBtn.disabled = false;
         dom.genBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+        // Better UI feedback if the noise tags were stripped and nothing was left
+        if (!text) {
+           dom.statusText.innerText = "No speech detected. Please try again or type manually.";
+        } else {
+           dom.statusText.innerText = "Transcription complete. Edit text if needed.";
+        }
       }
 
       if (status === 'reports_generated') {
