@@ -165,7 +165,7 @@
       locationInput: document.getElementById('manualLocation')
     };
 
-    // AI Web Worker with strictly formatted 1-11 JSON output structure
+    // AI Web Worker with Control Character Sanitizer Fix
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -210,10 +210,9 @@
             
             self.postMessage({ status: 'progress', message: 'Analyzing transcript...' });
             
-            const systemPrompt = "You are a clinical AI. Respond ONLY with a valid raw JSON object. Do NOT add extra words or markdown blocks.";
-            const userPrompt = "Analyze this transcript: \\"" + String(payload.transcript) + "\\". Categorize the clinical notes exactly into these groups. Return JSON with exact keys: \\"SOAP\\": {\\"1_Signalment_Core_Disease_Category\\": \\"\\", \\"2_3_History\\": \\"\\", \\"4_Findings\\": \\"\\", \\"5_6_7_Diagnostics\\": \\"\\", \\"8_9_Plan\\": \\"\\", \\"10_11_Takeaways_Differentiation\\": \\"\\"}, \\"ClientInstructions\\": [\\"\\", \\"\\", \\"\\"]";
+            const systemPrompt = "You are a clinical AI. Respond ONLY with a single-line valid JSON object. Do NOT use literal newlines inside values.";
+            const userPrompt = "Analyze this transcript: \\"" + String(payload.transcript) + "\\". Categorize clinical notes into JSON: \\"SOAP\\": {\\"1_Signalment_Core_Disease_Category\\": \\"\\", \\"2_3_History\\": \\"\\", \\"4_Findings\\": \\"\\", \\"5_6_7_Diagnostics\\": \\"\\", \\"8_9_Plan\\": \\"\\", \\"10_11_Takeaways_Differentiation\\": \\"\\"}, \\"ClientInstructions\\": [\\"\\", \\"\\", \\"\\"]";
 
-            // Temperature 0.0 + max_tokens 280 for sub-6 second execution
             const reply = await llmEngine.chat.completions.create({
               messages: [
                 { role: "system", content: String(systemPrompt) },
@@ -225,8 +224,21 @@
 
             const contentStr = String(reply.choices[0].message.content || "");
             const jsonMatch = contentStr.match(/\\{[\\s\\S]*\\}/);
-            const parsedData = JSON.parse(jsonMatch ? jsonMatch[0] : contentStr);
-            
+            let rawJson = jsonMatch ? jsonMatch[0] : contentStr;
+
+            // Escape control characters before JSON.parse
+            const sanitizedJson = rawJson.replace(/[\\u0000-\\u001F]/g, (match) => {
+              switch (match) {
+                case '\\n': return '\\\\n';
+                case '\\r': return '\\\\r';
+                case '\\t': return '\\\\t';
+                case '\\b': return '\\\\b';
+                case '\\f': return '\\\\f';
+                default: return '';
+              }
+            });
+
+            const parsedData = JSON.parse(sanitizedJson);
             self.postMessage({ status: 'reports_generated', data: parsedData });
           }
         } catch (err) {
@@ -270,7 +282,7 @@
       if (status === 'reports_generated') {
         generatedData = data;
         
-        // Populate exactly 1-11 SOAP UI
+        // Populate 1-11 SOAP UI
         const soap = data.SOAP || {};
         document.getElementById('soap1').innerText = soap["1_Signalment_Core_Disease_Category"] || "N/A";
         document.getElementById('soap23').innerText = soap["2_3_History"] || "N/A";
@@ -312,7 +324,6 @@
           const audioBlob = new Blob(audioChunks); 
           const arrayBuffer = await audioBlob.arrayBuffer();
           
-          // Force 16000Hz sampling rate for Whisper AI
           const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
           const decoded = await audioCtx.decodeAudioData(arrayBuffer);
           const rawAudio = decoded.getChannelData(0);
