@@ -200,8 +200,12 @@
           if (type === 'PROCESS_EDITED_TEXT') {
             self.postMessage({ status: 'progress', message: 'Loading LLM Engine (Llama 3.2)...' });
             if (!llmEngine) {
+                // THE FIX: Constraining context window size severely reduces the WebGPU MaxBufferSize requirement
                 llmEngine = await CreateMLCEngine("Llama-3.2-1B-Instruct-q4f16_1-MLC", {
-                  initProgressCallback: (info) => self.postMessage({ status: 'progress', message: info.text || 'Loading GPU model...' })
+                  initProgressCallback: (info) => self.postMessage({ status: 'progress', message: info.text || 'Loading GPU model...' }),
+                  chatOpts: {
+                    context_window_size: 2048
+                  }
                 });
             }
             
