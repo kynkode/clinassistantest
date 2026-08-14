@@ -182,7 +182,7 @@
       locationInput: document.getElementById('manualLocation')
     };
 
-    // AI Web Worker with Error-Proof JSON Parsing & Flat Structure Enforcement Fix
+    // AI Web Worker with Error-Proof JSON Parsing & Strict Clinical Output Filtering
     const workerCode = `
       import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0/dist/transformers.min.js';
       import { CreateMLCEngine } from 'https://esm.run/@mlc-ai/web-llm';
@@ -227,16 +227,16 @@
             
             self.postMessage({ status: 'progress', message: 'Analyzing transcript...' });
             
-            const systemPrompt = "You are a clinical AI. Respond ONLY with valid JSON. Do not include markdown code blocks. Keep all SOAP values as flat strings; DO NOT nest objects inside the keys.";
-            const userPrompt = "Analyze this transcript: \\"" + String(payload.transcript) + "\\". Return EXACTLY this format with string values: {\\"SOAP\\": {\\"1_Signalment_Core_Disease_Category\\": \\"\\", \\"2_3_History\\": \\"\\", \\"4_Findings\\": \\"\\", \\"5_6_7_Diagnostics\\": \\"\\", \\"8_9_Plan\\": \\"\\", \\"10_11_Takeaways_Differentiation\\": \\"\\"}, \\"ClientInstructions\\": [\\"\\", \\"\\", \\"\\"]}";
+            const systemPrompt = "You are a clinical AI assistant. Respond ONLY with valid JSON. Do NOT include Markdown formatting or code blocks. Keep all SOAP values as flat strings; DO NOT nest objects. DO NOT include consultation durations, time limits, or metadata phrases such as '2 minutes' or '5 mins' anywhere in the output.";
+            const userPrompt = "Analyze this clinical transcript: \\"" + String(payload.transcript) + "\\". Focus strictly on clinical data. For 'ClientInstructions', translate the treatment plan into clear, actionable patient/client prescription instructions (medication names, application/dosage routines, and care instructions).\n\nReturn EXACTLY this JSON structure:\n{\\"SOAP\\": {\\"1_Signalment_Core_Disease_Category\\": \\"\\", \\"2_3_History\\": \\"\\", \\"4_Findings\\": \\"\\", \\"5_6_7_Diagnostics\\": \\"\\", \\"8_9_Plan\\": \\"\\", \\"10_11_Takeaways_Differentiation\\": \\"\\"}, \\"ClientInstructions\\": [\\"Prescription item/medication dosage instruction 1\\", \\"Care/application instruction 2\\", \\"Follow-up instruction 3\\"]}";
 
             const reply = await llmEngine.chat.completions.create({
               messages: [
                 { role: "system", content: String(systemPrompt) },
                 { role: "user", content: String(userPrompt) }
               ],
-              max_tokens: 400,
-              temperature: 0.0
+              max_tokens: 500,
+              temperature: 0.1
             });
 
             const contentStr = String(reply.choices[0].message.content || "");
@@ -292,11 +292,14 @@
 
       if (status === 'reports_generated') {
         
-        // UPGRADED Formatter: Aggressively strips rogue JSON characters (brackets, quotes) to prevent the `{"text"}` bug
+        // UPGRADED Formatter: Aggressively strips rogue JSON characters and duration phrases
         const formatValue = (val) => {
             if (!val || val === "null" || String(val).trim() === "") return "None";
             let strVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
-            return strVal.replace(/[{}[\]"]/g, '').trim() || "None";
+            let clean = strVal.replace(/[{}[\]"]/g, '').trim();
+            // Filter out fluff duration references
+            clean = clean.replace(/,?\s*\b\d+\s*(minutes|mins|min)\b/gi, '').trim();
+            return clean || "None";
         };
 
         const rawSoap = data.SOAP || {};
@@ -322,7 +325,7 @@
         document.getElementById('soap89').innerText = cleanSOAP["8_9_Plan"];
         document.getElementById('soap1011').innerText = cleanSOAP["10_11_Takeaways_Differentiation"];
         
-        // UPGRADED Instruction Parsing: Clears out empty bullets (e.g., ["", "", ""])
+        // Instruction Parsing
         let instList = [];
         if (Array.isArray(data.ClientInstructions)) {
             instList = data.ClientInstructions;
