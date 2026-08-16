@@ -31,6 +31,28 @@
     .animate-wave-2 { animation: wave-bars 0.8s infinite ease-in-out 0.15s; }
     .animate-wave-3 { animation: wave-bars 0.8s infinite ease-in-out 0.3s; }
     .animate-wave-4 { animation: wave-bars 0.8s infinite ease-in-out 0.45s; }
+
+    /* Editable Field Styling */
+    [contenteditable="true"] {
+      transition: all 0.2s ease-in-out;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-left: -8px;
+      margin-top: 4px;
+      display: block;
+      min-height: 1.5rem;
+    }
+    [contenteditable="true"]:hover {
+      background-color: rgba(30, 41, 59, 0.5);
+      border-color: rgba(71, 85, 105, 0.5);
+    }
+    [contenteditable="true"]:focus {
+      background-color: rgba(15, 23, 42, 0.6);
+      border-color: rgba(99, 102, 241, 0.5);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 font-sans selection:bg-indigo-500/30">
@@ -75,7 +97,7 @@
         <button id="recordBtn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg hover:shadow-indigo-500/25 text-sm flex items-center gap-2">🎙️ Record</button>
         <button id="stopBtn" disabled class="px-6 py-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg hover:shadow-rose-500/25 opacity-50 cursor-not-allowed text-sm flex items-center gap-2">⏹️ Stop</button>
         <button id="generateBtn" disabled class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg hover:shadow-emerald-500/25 opacity-50 cursor-not-allowed text-sm flex items-center gap-2">⚙️ Analyze Report</button>
-        <button id="downloadPdfBtn" disabled class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg hover:shadow-blue-500/25 opacity-50 cursor-not-allowed text-sm flex items-center gap-2">📄 PDF</button>
+        <button id="downloadPdfBtn" disabled class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg hover:shadow-blue-500/25 opacity-50 cursor-not-allowed text-sm flex items-center gap-2">📄 PDFs</button>
         <button id="emailBtn" disabled class="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg hover:shadow-purple-500/25 opacity-50 cursor-not-allowed text-sm flex items-center gap-2">📧 Email</button>
       </div>
     </div>
@@ -89,53 +111,82 @@
       <textarea id="transcriptText" class="w-full bg-slate-900/50 text-sm text-slate-200 rounded-xl p-4 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-indigo-500/80 border border-slate-700/50 resize-y placeholder-slate-600 transition-all leading-relaxed" placeholder="Transcription will appear here..."></textarea>
     </div>
 
+    <!-- AI Intelligence Warnings Box -->
+    <div id="aiWarningsCard" class="hidden bg-rose-900/20 border border-rose-700/50 rounded-2xl p-4 shadow-xl transition-all">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-rose-400 mb-2 flex items-center gap-2">⚠️ AI Intelligence Warning: Improbable Data Detected</h2>
+      <ul id="aiWarningsList" class="list-disc list-inside text-sm text-rose-200/90 space-y-1"></ul>
+    </div>
+
     <!-- Output Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="reportUI">
+      
       <div id="soapCard" class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5 transition-all">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400 border-b border-slate-700/60 pb-3">Clinical Analysis (Categorized)</h2>
+        <div class="flex justify-between items-end border-b border-slate-700/60 pb-3">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400">Clinical Analysis</h2>
+          <span class="text-[10px] text-slate-500 uppercase tracking-wider">Click text to edit</span>
+        </div>
         <div class="space-y-4 text-sm text-slate-300">
-          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">1. Signalment & Core(Disease Category):</span> <span id="soap1" class="text-slate-300">-</span></div>
-          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">2 & 3. History:</span> <span id="soap23" class="text-slate-300">-</span></div>
-          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">4. Findings:</span> <span id="soap4" class="text-slate-300">-</span></div>
-          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">5, 6, & 7. Diagnostics:</span> <span id="soap567" class="text-slate-300">-</span></div>
-          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">8 & 9. Plan:</span> <span id="soap89" class="text-slate-300">-</span></div>
-          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">10 & 11. Takeaways/Differentiation:</span> <span id="soap1011" class="text-slate-300">-</span></div>
+          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">1. Signalment & Core:</span> <div id="soap1" contenteditable="true" class="text-slate-300 whitespace-pre-wrap">-</div></div>
+          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">2 & 3. History:</span> <div id="soap23" contenteditable="true" class="text-slate-300 whitespace-pre-wrap">-</div></div>
+          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">4. Findings:</span> <div id="soap4" contenteditable="true" class="text-slate-300 whitespace-pre-wrap">-</div></div>
+          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">5, 6, & 7. Diagnostics:</span> <div id="soap567" contenteditable="true" class="text-slate-300 whitespace-pre-wrap">-</div></div>
+          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">8 & 9. Plan:</span> <div id="soap89" contenteditable="true" class="text-slate-300 whitespace-pre-wrap">-</div></div>
+          <div class="break-words leading-relaxed"><span class="font-semibold text-slate-100">10 & 11. Takeaways/Diff:</span> <div id="soap1011" contenteditable="true" class="text-slate-300 whitespace-pre-wrap">-</div></div>
         </div>
       </div>
 
       <div id="instructionsCard" class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5 transition-all">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400 border-b border-slate-700/60 pb-3">Patient Instructions</h2>
-        <p id="instructionsText" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">-</p>
+        <div class="flex justify-between items-end border-b border-slate-700/60 pb-3">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-400">Patient Instructions</h2>
+          <span class="text-[10px] text-slate-500 uppercase tracking-wider">Click text to edit</span>
+        </div>
+        <div id="instructionsText" contenteditable="true" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">-</div>
       </div>
     </div>
   </div>
 
-  <!-- Hidden PDF Template -->
-  <div id="pdfTemplate" class="fixed -left-[9999px] top-0 bg-white text-black p-10 w-[800px] pointer-events-none">
+  <!-- Hidden PDF Templates -->
+  
+  <!-- PDF 1: Consultation Report -->
+  <div id="pdfTemplateReport" class="fixed -left-[9999px] top-0 bg-white text-black p-10 w-[800px] pointer-events-none">
     <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
       <div>
-        <h1 class="text-3xl font-bold text-slate-900" id="pdfClinicName">Clinic Name</h1>
-        <h2 class="text-lg text-slate-700 mt-1" id="pdfDoctorName">Doctor Name</h2>
+        <h1 class="text-3xl font-bold text-slate-900" id="pdf1ClinicName">Clinic Name</h1>
+        <h2 class="text-lg text-slate-700 mt-1" id="pdf1DoctorName">Doctor Name</h2>
       </div>
       <div class="text-right text-sm text-slate-500">
-        <p id="pdfLocation">Location</p>
-        <p id="pdfDate">Date</p>
+        <p id="pdf1Location">Location</p>
+        <p id="pdf1Date">Date</p>
       </div>
     </div>
     <div class="mb-6">
       <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2 pb-1">Clinical SOAP Report</h3>
       <div class="text-sm space-y-3 leading-relaxed">
-        <p><strong>1. Signalment & Core(Disease Category):</strong> <span id="pdf1"></span></p>
-        <p><strong>2 & 3. History:</strong> <span id="pdf23"></span></p>
-        <p><strong>4. Findings:</strong> <span id="pdf4"></span></p>
-        <p><strong>5, 6, & 7. Diagnostics:</strong> <span id="pdf567"></span></p>
-        <p><strong>8 & 9. Plan:</strong> <span id="pdf89"></span></p>
-        <p><strong>10 & 11. Takeaways/Differentiation:</strong> <span id="pdf1011"></span></p>
+        <p><strong>1. Signalment & Core(Disease Category):</strong> <span id="pdf1_s1"></span></p>
+        <p><strong>2 & 3. History:</strong> <span id="pdf1_s23"></span></p>
+        <p><strong>4. Findings:</strong> <span id="pdf1_s4"></span></p>
+        <p><strong>5, 6, & 7. Diagnostics:</strong> <span id="pdf1_s567"></span></p>
+        <p><strong>8 & 9. Plan:</strong> <span id="pdf1_s89"></span></p>
+        <p><strong>10 & 11. Takeaways/Differentiation:</strong> <span id="pdf1_s1011"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF 2: Discharge Instructions -->
+  <div id="pdfTemplateInstructions" class="fixed -left-[9999px] top-0 bg-white text-black p-10 w-[800px] pointer-events-none">
+    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900" id="pdf2ClinicName">Clinic Name</h1>
+        <h2 class="text-lg text-slate-700 mt-1" id="pdf2DoctorName">Doctor Name</h2>
+      </div>
+      <div class="text-right text-sm text-slate-500">
+        <p id="pdf2Location">Location</p>
+        <p id="pdf2Date">Date</p>
       </div>
     </div>
     <div>
-      <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2 pb-1">Discharge Instructions</h3>
-      <p class="text-sm leading-relaxed whitespace-pre-wrap" id="pdfInstructions"></p>
+      <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-4 pb-1">Discharge Instructions</h3>
+      <p class="text-sm leading-relaxed whitespace-pre-wrap" id="pdf2Instructions"></p>
     </div>
   </div>
 
@@ -143,11 +194,11 @@
     // ==========================================
     // ⚠️ REPLACE THIS WITH YOUR NEW WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhVV9-bnE7Ul-H6Eu_hib_OM1ezH1eY3D4t65_akQQHpPbZwRBLkbE7pQiiI1UwfCbig/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5wTg46wyYowbQVaRvK3S9dXhERWV52PT5a5axAjD3GL9e0BLEX0twvY-2GBAMUQBrrA/exec";
 
     let mediaRecorder = null;
     let audioChunks = [];
-    let generatedData = null;
+    let generatedData = null; // We keep this as reference, but rely on DOM for edits
 
     const dom = {
       statusText: document.getElementById('statusText'),
@@ -159,7 +210,9 @@
       genBtn: document.getElementById('generateBtn'),
       pdfBtn: document.getElementById('downloadPdfBtn'),
       emailBtn: document.getElementById('emailBtn'),
-      locationInput: document.getElementById('manualLocation')
+      locationInput: document.getElementById('manualLocation'),
+      warningsCard: document.getElementById('aiWarningsCard'),
+      warningsList: document.getElementById('aiWarningsList')
     };
 
     function setProgress(message, show) {
@@ -172,6 +225,7 @@
       try {
         audioChunks = [];
         dom.transcript.value = "";
+        dom.warningsCard.classList.add('hidden');
         dom.genBtn.disabled = true;
 
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -244,6 +298,7 @@
       if (!text) return alert("Transcript is empty!");
 
       dom.genBtn.disabled = true;
+      dom.warningsCard.classList.add('hidden');
       setProgress("Analyzing transcript on the cloud...", true);
 
       try {
@@ -272,13 +327,19 @@
         let instList = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions : [generatedData.ClientInstructions];
         document.getElementById('instructionsText').innerText = instList.length > 0 ? instList.map(i => `• ${i}`).join('\n\n') : "No specific instructions.";
 
+        // Handle Intelligence Warnings
+        if (generatedData.Warnings && Array.isArray(generatedData.Warnings) && generatedData.Warnings.length > 0 && generatedData.Warnings[0] !== "") {
+          dom.warningsList.innerHTML = generatedData.Warnings.map(w => `<li>${w}</li>`).join('');
+          dom.warningsCard.classList.remove('hidden');
+        }
+
         dom.pdfBtn.disabled = false;
         dom.pdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         dom.emailBtn.disabled = false;
         dom.emailBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
         setProgress("Analysis complete! Saving to database...", false);
-        syncToDatabase(generatedData, "save");
+        syncToDatabase(getEditedData(), "save");
         dom.genBtn.disabled = false;
 
       } catch (err) {
@@ -287,29 +348,52 @@
       }
     };
 
+    // Helper: Gets current data direct from the editable UI
+    function getEditedData() {
+      return {
+        SOAP: {
+          "1_Signalment_Core_Disease_Category": document.getElementById('soap1').innerText,
+          "2_3_History": document.getElementById('soap23').innerText,
+          "4_Findings": document.getElementById('soap4').innerText,
+          "5_6_7_Diagnostics": document.getElementById('soap567').innerText,
+          "8_9_Plan": document.getElementById('soap89').innerText,
+          "10_11_Takeaways_Differentiation": document.getElementById('soap1011').innerText
+        },
+        ClientInstructions: document.getElementById('instructionsText').innerText // Sending as plain text
+      };
+    }
+
     // --- PDF Template population ---
-    function populatePdfTemplate() {
-      document.getElementById('pdfClinicName').innerText = document.getElementById('clinicName').value || "Unknown Clinic";
-      document.getElementById('pdfDoctorName').innerText = document.getElementById('doctorName').value || "Unknown Doctor";
-      document.getElementById('pdfLocation').innerText = dom.locationInput.value || "Not Specified";
-      document.getElementById('pdfDate').innerText = new Date().toLocaleDateString();
+    function populatePdfTemplates() {
+      const clinic = document.getElementById('clinicName').value || "Unknown Clinic";
+      const doctor = document.getElementById('doctorName').value || "Unknown Doctor";
+      const loc = dom.locationInput.value || "Not Specified";
+      const date = new Date().toLocaleDateString();
 
-      const soap = generatedData ? (generatedData.SOAP || {}) : {};
-      document.getElementById('pdf1').innerText = soap["1_Signalment_Core_Disease_Category"] || "";
-      document.getElementById('pdf23').innerText = soap["2_3_History"] || "";
-      document.getElementById('pdf4').innerText = soap["4_Findings"] || "";
-      document.getElementById('pdf567').innerText = soap["5_6_7_Diagnostics"] || "";
-      document.getElementById('pdf89').innerText = soap["8_9_Plan"] || "";
-      document.getElementById('pdf1011').innerText = soap["10_11_Takeaways_Differentiation"] || "";
+      // Populate Template 1 (Report)
+      document.getElementById('pdf1ClinicName').innerText = clinic;
+      document.getElementById('pdf1DoctorName').innerText = doctor;
+      document.getElementById('pdf1Location').innerText = loc;
+      document.getElementById('pdf1Date').innerText = date;
 
-      const inst = generatedData && Array.isArray(generatedData.ClientInstructions) 
-          ? generatedData.ClientInstructions.map(i => `• ${i}`).join('\n\n') 
-          : "No specific instructions provided.";
-      document.getElementById('pdfInstructions').innerText = inst;
+      document.getElementById('pdf1_s1').innerText = document.getElementById('soap1').innerText;
+      document.getElementById('pdf1_s23').innerText = document.getElementById('soap23').innerText;
+      document.getElementById('pdf1_s4').innerText = document.getElementById('soap4').innerText;
+      document.getElementById('pdf1_s567').innerText = document.getElementById('soap567').innerText;
+      document.getElementById('pdf1_s89').innerText = document.getElementById('soap89').innerText;
+      document.getElementById('pdf1_s1011').innerText = document.getElementById('soap1011').innerText;
+
+      // Populate Template 2 (Instructions)
+      document.getElementById('pdf2ClinicName').innerText = clinic;
+      document.getElementById('pdf2DoctorName').innerText = doctor;
+      document.getElementById('pdf2Location').innerText = loc;
+      document.getElementById('pdf2Date').innerText = date;
+
+      document.getElementById('pdf2Instructions').innerText = document.getElementById('instructionsText').innerText;
     }
 
     // --- Backend Sync Logic ---
-    async function syncToDatabase(data, actionType, pdfBase64 = null) {
+    async function syncToDatabase(data, actionType, reportPdfBase64 = null, instructionsPdfBase64 = null) {
       try {
         const payload = {
           action: actionType,
@@ -320,7 +404,8 @@
           patientEmail: document.getElementById('patientEmail').value || "",
           SOAP: data ? data.SOAP : {},
           ClientInstructions: data ? data.ClientInstructions : "",
-          pdfBase64: pdfBase64
+          reportPdfBase64: reportPdfBase64,
+          instructionsPdfBase64: instructionsPdfBase64
         };
 
         const res = await fetch(APPS_SCRIPT_URL, {
@@ -343,22 +428,35 @@
       dom.emailBtn.disabled = true;
 
       try {
-        populatePdfTemplate();
-        const pdfBase64 = await html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplate')).outputPdf('datauristring');
-        await syncToDatabase(generatedData, "email", pdfBase64);
+        populatePdfTemplates();
+        
+        const reportPdfBase64 = await html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).outputPdf('datauristring');
+        const instructionsPdfBase64 = await html2pdf().set({ margin: 0.5, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).outputPdf('datauristring');
+
+        await syncToDatabase(getEditedData(), "email", reportPdfBase64, instructionsPdfBase64);
         dom.emailBtn.innerText = "📧 Email Sent!";
       } catch (err) {
         alert("Email sending failed: " + err.message);
         dom.emailBtn.innerText = "📧 Email";
       } finally {
-        dom.emailBtn.disabled = false;
+        setTimeout(() => {
+          dom.emailBtn.innerText = "📧 Email";
+          dom.emailBtn.disabled = false;
+        }, 3000);
       }
     };
 
-    dom.pdfBtn.onclick = () => {
+    dom.pdfBtn.onclick = async () => {
       if (!generatedData) return;
-      populatePdfTemplate();
-      html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplate')).save();
+      populatePdfTemplates();
+      
+      // Download sequential PDFs
+      await html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).save();
+      
+      // Small timeout to prevent the browser from blocking multiple downloads
+      setTimeout(() => {
+        html2pdf().set({ margin: 0.5, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).save();
+      }, 1000); 
     };
   </script>
 </body>
