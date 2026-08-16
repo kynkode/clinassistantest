@@ -192,13 +192,13 @@
 
   <script>
     // ==========================================
-    // ⚠️ REPLACE THIS WITH YOUR NEW WEB APP URL
+    // ⚠️ REPLACE THIS WITH YOUR WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5wTg46wyYowbQVaRvK3S9dXhERWV52PT5a5axAjD3GL9e0BLEX0twvY-2GBAMUQBrrA/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbziEYIsIeMQHDanP7xFJ-bEiFSd8ZRp6Y7gP6Kw2YBWrQ0rj3HfnQH7CTWaheK9QDs9wA/exec";
 
     let mediaRecorder = null;
     let audioChunks = [];
-    let generatedData = null; // We keep this as reference, but rely on DOM for edits
+    let generatedData = null;
 
     const dom = {
       statusText: document.getElementById('statusText'),
@@ -220,7 +220,7 @@
       show ? dom.progress.classList.remove('hidden') : dom.progress.classList.add('hidden');
     }
 
-    // --- Audio Logic ---
+    // --- Audio Recording ---
     dom.recordBtn.onclick = async () => {
       try {
         audioChunks = [];
@@ -315,17 +315,25 @@
 
         generatedData = data.result;
 
-        // Populate UI
+        // Populate SOAP fields
         const soap = generatedData.SOAP || {};
-        document.getElementById('soap1').innerText = soap["1_Signalment_Core_Disease_Category"] || "None";
-        document.getElementById('soap23').innerText = soap["2_3_History"] || "None";
-        document.getElementById('soap4').innerText = soap["4_Findings"] || "None";
-        document.getElementById('soap567').innerText = soap["5_6_7_Diagnostics"] || "None";
-        document.getElementById('soap89').innerText = soap["8_9_Plan"] || "None";
-        document.getElementById('soap1011').innerText = soap["10_11_Takeaways_Differentiation"] || "None";
+        document.getElementById('soap1').innerText = soap["1_Signalment_Core_Disease_Category"] || "Not reported";
+        document.getElementById('soap23').innerText = soap["2_3_History"] || "Unremarkable";
+        document.getElementById('soap4').innerText = soap["4_Findings"] || "Unremarkable";
+        document.getElementById('soap567').innerText = soap["5_6_7_Diagnostics"] || "None documented";
+        document.getElementById('soap89').innerText = soap["8_9_Plan"] || "None documented";
+        document.getElementById('soap1011').innerText = soap["10_11_Takeaways_Differentiation"] || "None documented";
 
-        let instList = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions : [generatedData.ClientInstructions];
-        document.getElementById('instructionsText').innerText = instList.length > 0 ? instList.map(i => `• ${i}`).join('\n\n') : "No specific instructions.";
+        // Handle Instructions & Deceased Patient logic
+        let instList = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions : (generatedData.ClientInstructions ? [generatedData.ClientInstructions] : []);
+        // Clean empty string entries
+        instList = instList.filter(i => i && i.trim() !== "");
+
+        if (instList.length > 0) {
+          document.getElementById('instructionsText').innerText = instList.map(i => `• ${i}`).join('\n\n');
+        } else {
+          document.getElementById('instructionsText').innerText = "N/A — Patient deceased or no discharge instructions required.";
+        }
 
         // Handle Intelligence Warnings
         if (generatedData.Warnings && Array.isArray(generatedData.Warnings) && generatedData.Warnings.length > 0 && generatedData.Warnings[0] !== "") {
@@ -348,7 +356,7 @@
       }
     };
 
-    // Helper: Gets current data direct from the editable UI
+    // Helper: Retrieve edited data directly from the DOM
     function getEditedData() {
       return {
         SOAP: {
@@ -359,18 +367,18 @@
           "8_9_Plan": document.getElementById('soap89').innerText,
           "10_11_Takeaways_Differentiation": document.getElementById('soap1011').innerText
         },
-        ClientInstructions: document.getElementById('instructionsText').innerText // Sending as plain text
+        ClientInstructions: document.getElementById('instructionsText').innerText
       };
     }
 
-    // --- PDF Template population ---
+    // --- PDF Template Population ---
     function populatePdfTemplates() {
       const clinic = document.getElementById('clinicName').value || "Unknown Clinic";
       const doctor = document.getElementById('doctorName').value || "Unknown Doctor";
       const loc = dom.locationInput.value || "Not Specified";
       const date = new Date().toLocaleDateString();
 
-      // Populate Template 1 (Report)
+      // Populate Report PDF
       document.getElementById('pdf1ClinicName').innerText = clinic;
       document.getElementById('pdf1DoctorName').innerText = doctor;
       document.getElementById('pdf1Location').innerText = loc;
@@ -383,7 +391,7 @@
       document.getElementById('pdf1_s89').innerText = document.getElementById('soap89').innerText;
       document.getElementById('pdf1_s1011').innerText = document.getElementById('soap1011').innerText;
 
-      // Populate Template 2 (Instructions)
+      // Populate Instructions PDF
       document.getElementById('pdf2ClinicName').innerText = clinic;
       document.getElementById('pdf2DoctorName').innerText = doctor;
       document.getElementById('pdf2Location').innerText = loc;
@@ -392,7 +400,7 @@
       document.getElementById('pdf2Instructions').innerText = document.getElementById('instructionsText').innerText;
     }
 
-    // --- Backend Sync Logic ---
+    // --- Backend Sync ---
     async function syncToDatabase(data, actionType, reportPdfBase64 = null, instructionsPdfBase64 = null) {
       try {
         const payload = {
@@ -413,13 +421,13 @@
           body: JSON.stringify(payload)
         });
 
-        if (res.ok) setProgress(actionType === "email" ? "Email Sent!" : "Saved to conversation log!", false);
+        if (res.ok) setProgress(actionType === "email" ? "Email Sent!" : "Saved to database!", false);
       } catch (err) {
         setProgress(`Sync status: ${err.message}`, false);
       }
     }
 
-    // --- Email & PDF Actions ---
+    // --- Actions: Email & Download ---
     dom.emailBtn.onclick = async () => {
       const email = document.getElementById('patientEmail').value;
       if (!email) return alert("Enter patient email first!");
@@ -431,7 +439,13 @@
         populatePdfTemplates();
         
         const reportPdfBase64 = await html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).outputPdf('datauristring');
-        const instructionsPdfBase64 = await html2pdf().set({ margin: 0.5, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).outputPdf('datauristring');
+        
+        // Generate instructions PDF only if valid instructions exist
+        let instructionsPdfBase64 = null;
+        const currentInstText = document.getElementById('instructionsText').innerText;
+        if (currentInstText && !currentInstText.startsWith("N/A")) {
+          instructionsPdfBase64 = await html2pdf().set({ margin: 0.5, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).outputPdf('datauristring');
+        }
 
         await syncToDatabase(getEditedData(), "email", reportPdfBase64, instructionsPdfBase64);
         dom.emailBtn.innerText = "📧 Email Sent!";
@@ -450,13 +464,16 @@
       if (!generatedData) return;
       populatePdfTemplates();
       
-      // Download sequential PDFs
+      // Download Report PDF
       await html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).save();
       
-      // Small timeout to prevent the browser from blocking multiple downloads
-      setTimeout(() => {
-        html2pdf().set({ margin: 0.5, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).save();
-      }, 1000); 
+      // Download Instructions PDF only if applicable
+      const currentInstText = document.getElementById('instructionsText').innerText;
+      if (currentInstText && !currentInstText.startsWith("N/A")) {
+        setTimeout(() => {
+          html2pdf().set({ margin: 0.5, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).save();
+        }, 1000); 
+      }
     };
   </script>
 </body>
