@@ -143,7 +143,7 @@
     // ==========================================
     // ⚠️ GOOGLE WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsM8_05uZ9mvxkNFAlUyoNMqEP_FjYlpXsZK69QQi93UdkVid5CyLAs16l1K7iCqtRqA/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyeJKQP5RaeTFpJSLRomA1uFQobyOQ_NV3NYlCaaWdBpA2AEXp9atibA7eYCSG26KxtvQ/exec";
     
     let mediaRecorder = null;
     let audioChunks = [];
@@ -197,7 +197,9 @@
               const json = await res.json();
               
               if (json.error) {
-                setProgress(`Error: ${json.error}`, false);
+                // Fix: Safely parse error objects returned from backend
+                const errorMsg = typeof json.error === 'object' ? (json.error.message || JSON.stringify(json.error)) : json.error;
+                setProgress(`API Error: ${errorMsg}`, false);
                 dom.recordBtn.disabled = false;
                 return;
               }
@@ -252,7 +254,10 @@
         });
         const data = await res.json();
         
-        if (data.error) throw new Error(data.error);
+        if (data.error) {
+           const errorMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : data.error;
+           throw new Error(errorMsg);
+        }
 
         generatedData = data.result;
         
