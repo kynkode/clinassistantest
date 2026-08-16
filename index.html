@@ -53,6 +53,17 @@
       outline: none;
       box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
     }
+
+    /* PDF Container - Hidden from user but accessible to html2pdf */
+    .pdf-render-zone {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: -50;
+      opacity: 0;
+      pointer-events: none;
+      width: 800px;
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 font-sans selection:bg-indigo-500/30">
@@ -62,11 +73,13 @@
     <!-- Settings Section -->
     <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/60 rounded-2xl p-6 shadow-xl w-full transition-all">
       <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Settings & Patient Info</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <input type="text" id="clinicName" placeholder="Clinic / Hospital Name" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80" value="General Hospital">
         <input type="text" id="manualLocation" placeholder="Location (e.g. City, Region)" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80">
         <input type="text" id="doctorName" placeholder="Provider Name" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80" value="Dr. John Doe">
         <input type="email" id="patientEmail" placeholder="Patient Email Address" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80">
+        <!-- New Letterhead Upload -->
+        <input type="file" id="letterheadUpload" accept="image/*" title="Upload Letterhead / Logo" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
       </div>
     </div>
 
@@ -145,60 +158,74 @@
     </div>
   </div>
 
-  <!-- Hidden PDF Templates -->
-  
-  <!-- PDF 1: Consultation Report -->
-  <div id="pdfTemplateReport" class="fixed -left-[9999px] top-0 bg-white text-black p-10 w-[800px] pointer-events-none">
-    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
-      <div>
-        <h1 class="text-3xl font-bold text-slate-900" id="pdf1ClinicName">Clinic Name</h1>
-        <h2 class="text-lg text-slate-700 mt-1" id="pdf1DoctorName">Doctor Name</h2>
+  <!-- Hidden PDF Templates (Positioned properly for html2canvas rendering) -->
+  <div class="pdf-render-zone">
+    
+    <!-- PDF 1: Consultation Report -->
+    <div id="pdfTemplateReport" class="bg-white text-black p-10 w-[800px]">
+      <!-- Dynamic Letterhead -->
+      <div id="pdf1LetterheadContainer" class="mb-6 text-center" style="display: none;">
+        <img id="pdf1Letterhead" src="" style="max-height: 120px; max-width: 100%; object-fit: contain; margin: 0 auto;">
       </div>
-      <div class="text-right text-sm text-slate-500">
-        <p id="pdf1Location">Location</p>
-        <p id="pdf1Date">Date</p>
+      
+      <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
+        <div>
+          <h1 class="text-3xl font-bold text-slate-900" id="pdf1ClinicName">Clinic Name</h1>
+          <h2 class="text-lg text-slate-700 mt-1" id="pdf1DoctorName">Doctor Name</h2>
+        </div>
+        <div class="text-right text-sm text-slate-500">
+          <p id="pdf1Location">Location</p>
+          <p id="pdf1Date">Date</p>
+        </div>
+      </div>
+      <div class="mb-6">
+        <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2 pb-1">Clinical SOAP Report</h3>
+        <div class="text-sm space-y-4 leading-relaxed">
+          <p><strong>1. Signalment & Core(Disease Category):</strong> <span id="pdf1_s1" class="whitespace-pre-wrap"></span></p>
+          <p><strong>2 & 3. History:</strong> <span id="pdf1_s23" class="whitespace-pre-wrap"></span></p>
+          <p><strong>4. Findings:</strong> <span id="pdf1_s4" class="whitespace-pre-wrap"></span></p>
+          <p><strong>5, 6, & 7. Diagnostics:</strong> <span id="pdf1_s567" class="whitespace-pre-wrap"></span></p>
+          <p><strong>8 & 9. Plan:</strong> <span id="pdf1_s89" class="whitespace-pre-wrap"></span></p>
+          <p><strong>10 & 11. Takeaways/Differentiation:</strong> <span id="pdf1_s1011" class="whitespace-pre-wrap"></span></p>
+        </div>
       </div>
     </div>
-    <div class="mb-6">
-      <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2 pb-1">Clinical SOAP Report</h3>
-      <div class="text-sm space-y-3 leading-relaxed">
-        <p><strong>1. Signalment & Core(Disease Category):</strong> <span id="pdf1_s1"></span></p>
-        <p><strong>2 & 3. History:</strong> <span id="pdf1_s23"></span></p>
-        <p><strong>4. Findings:</strong> <span id="pdf1_s4"></span></p>
-        <p><strong>5, 6, & 7. Diagnostics:</strong> <span id="pdf1_s567"></span></p>
-        <p><strong>8 & 9. Plan:</strong> <span id="pdf1_s89"></span></p>
-        <p><strong>10 & 11. Takeaways/Differentiation:</strong> <span id="pdf1_s1011"></span></p>
-      </div>
-    </div>
-  </div>
 
-  <!-- PDF 2: Discharge Instructions -->
-  <div id="pdfTemplateInstructions" class="fixed -left-[9999px] top-0 bg-white text-black p-10 w-[800px] pointer-events-none">
-    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
+    <!-- PDF 2: Discharge Instructions -->
+    <div id="pdfTemplateInstructions" class="bg-white text-black p-10 w-[800px]">
+      <!-- Dynamic Letterhead -->
+      <div id="pdf2LetterheadContainer" class="mb-6 text-center" style="display: none;">
+        <img id="pdf2Letterhead" src="" style="max-height: 120px; max-width: 100%; object-fit: contain; margin: 0 auto;">
+      </div>
+
+      <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
+        <div>
+          <h1 class="text-3xl font-bold text-slate-900" id="pdf2ClinicName">Clinic Name</h1>
+          <h2 class="text-lg text-slate-700 mt-1" id="pdf2DoctorName">Doctor Name</h2>
+        </div>
+        <div class="text-right text-sm text-slate-500">
+          <p id="pdf2Location">Location</p>
+          <p id="pdf2Date">Date</p>
+        </div>
+      </div>
       <div>
-        <h1 class="text-3xl font-bold text-slate-900" id="pdf2ClinicName">Clinic Name</h1>
-        <h2 class="text-lg text-slate-700 mt-1" id="pdf2DoctorName">Doctor Name</h2>
-      </div>
-      <div class="text-right text-sm text-slate-500">
-        <p id="pdf2Location">Location</p>
-        <p id="pdf2Date">Date</p>
+        <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-4 pb-1">Discharge Instructions</h3>
+        <p class="text-sm leading-relaxed whitespace-pre-wrap" id="pdf2Instructions"></p>
       </div>
     </div>
-    <div>
-      <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-4 pb-1">Discharge Instructions</h3>
-      <p class="text-sm leading-relaxed whitespace-pre-wrap" id="pdf2Instructions"></p>
-    </div>
+
   </div>
 
   <script>
     // ==========================================
     // ⚠️ REPLACE THIS WITH YOUR WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbziEYIsIeMQHDanP7xFJ-bEiFSd8ZRp6Y7gP6Kw2YBWrQ0rj3HfnQH7CTWaheK9QDs9wA/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAn1lhw9MoEJOTFp_cTXxh7GfVAcXyoXSNkfMR9UuEGS1oUIXsdsmmQ0iGdfNOYFWGhg/exec";
 
     let mediaRecorder = null;
     let audioChunks = [];
     let generatedData = null;
+    let letterheadBase64 = ""; // Stores the uploaded image
 
     const dom = {
       statusText: document.getElementById('statusText'),
@@ -212,13 +239,36 @@
       emailBtn: document.getElementById('emailBtn'),
       locationInput: document.getElementById('manualLocation'),
       warningsCard: document.getElementById('aiWarningsCard'),
-      warningsList: document.getElementById('aiWarningsList')
+      warningsList: document.getElementById('aiWarningsList'),
+      letterheadInput: document.getElementById('letterheadUpload')
+    };
+
+    // Configuration for html2pdf ensuring crisp, accurate rendering
+    const pdfOptions = {
+      margin: 0.5,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
     function setProgress(message, show) {
       dom.statusText.innerText = message;
       show ? dom.progress.classList.remove('hidden') : dom.progress.classList.add('hidden');
     }
+
+    // --- Letterhead Logic ---
+    dom.letterheadInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          letterheadBase64 = event.target.result;
+        }
+        reader.readAsDataURL(file);
+      } else {
+        letterheadBase64 = "";
+      }
+    });
 
     // --- Audio Recording ---
     dom.recordBtn.onclick = async () => {
@@ -326,7 +376,6 @@
 
         // Handle Instructions & Deceased Patient logic
         let instList = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions : (generatedData.ClientInstructions ? [generatedData.ClientInstructions] : []);
-        // Clean empty string entries
         instList = instList.filter(i => i && i.trim() !== "");
 
         if (instList.length > 0) {
@@ -378,7 +427,18 @@
       const loc = dom.locationInput.value || "Not Specified";
       const date = new Date().toLocaleDateString();
 
-      // Populate Report PDF
+      // Handle Letterhead Injection
+      if (letterheadBase64) {
+        document.getElementById('pdf1Letterhead').src = letterheadBase64;
+        document.getElementById('pdf1LetterheadContainer').style.display = 'block';
+        document.getElementById('pdf2Letterhead').src = letterheadBase64;
+        document.getElementById('pdf2LetterheadContainer').style.display = 'block';
+      } else {
+        document.getElementById('pdf1LetterheadContainer').style.display = 'none';
+        document.getElementById('pdf2LetterheadContainer').style.display = 'none';
+      }
+
+      // Populate Report PDF text (pulling live from DOM to include user edits)
       document.getElementById('pdf1ClinicName').innerText = clinic;
       document.getElementById('pdf1DoctorName').innerText = doctor;
       document.getElementById('pdf1Location').innerText = loc;
@@ -391,7 +451,7 @@
       document.getElementById('pdf1_s89').innerText = document.getElementById('soap89').innerText;
       document.getElementById('pdf1_s1011').innerText = document.getElementById('soap1011').innerText;
 
-      // Populate Instructions PDF
+      // Populate Instructions PDF text
       document.getElementById('pdf2ClinicName').innerText = clinic;
       document.getElementById('pdf2DoctorName').innerText = doctor;
       document.getElementById('pdf2Location').innerText = loc;
@@ -438,13 +498,12 @@
       try {
         populatePdfTemplates();
         
-        const reportPdfBase64 = await html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).outputPdf('datauristring');
+        let reportPdfBase64 = await html2pdf().set({ ...pdfOptions, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).outputPdf('datauristring');
         
-        // Generate instructions PDF only if valid instructions exist
         let instructionsPdfBase64 = null;
         const currentInstText = document.getElementById('instructionsText').innerText;
         if (currentInstText && !currentInstText.startsWith("N/A")) {
-          instructionsPdfBase64 = await html2pdf().set({ margin: 0.5, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).outputPdf('datauristring');
+          instructionsPdfBase64 = await html2pdf().set({ ...pdfOptions, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).outputPdf('datauristring');
         }
 
         await syncToDatabase(getEditedData(), "email", reportPdfBase64, instructionsPdfBase64);
@@ -464,14 +523,14 @@
       if (!generatedData) return;
       populatePdfTemplates();
       
-      // Download Report PDF
-      await html2pdf().set({ margin: 0.5, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).save();
+      // Download Report PDF using explicit rendering options
+      await html2pdf().set({ ...pdfOptions, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).save();
       
       // Download Instructions PDF only if applicable
       const currentInstText = document.getElementById('instructionsText').innerText;
       if (currentInstText && !currentInstText.startsWith("N/A")) {
         setTimeout(() => {
-          html2pdf().set({ margin: 0.5, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).save();
+          html2pdf().set({ ...pdfOptions, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).save();
         }, 1000); 
       }
     };
