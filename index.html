@@ -141,10 +141,10 @@
 
   <script>
     // ==========================================
-    // ⚠️ GOOGLE WEB APP URL
+    // ⚠️ REPLACE THIS WITH YOUR NEW WEB APP URL
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwE8oKL4pTCn0Dr3yiJQOYMAmExLYWdFneF88AqqZDnaUX8wl04XrE50g2OQcEfiF3laQ/exec";
-    
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby24IbxhwFzrac5UvqxBnEEukwHLzwvj1_xs5o24X2sH9Z2Cm8k-xW3nUkbh12mafWf/exec";
+
     let mediaRecorder = null;
     let audioChunks = [];
     let generatedData = null;
@@ -173,31 +173,30 @@
         audioChunks = [];
         dom.transcript.value = "";
         dom.genBtn.disabled = true;
-        
+
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-        
+
         mediaRecorder.onstop = async () => {
           setProgress("Uploading audio to cloud for transcription...", true);
-          
+
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           const reader = new FileReader();
-          
+
           reader.readAsDataURL(audioBlob);
           reader.onloadend = async () => {
             const base64Audio = reader.result.split(',')[1];
             stream.getTracks().forEach(t => t.stop());
-            
+
             try {
               const res = await fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'transcribe', audioBase64: base64Audio }),
               });
               const json = await res.json();
-              
+
               if (json.error) {
-                // Fix: Safely parse error objects returned from backend
                 const errorMsg = typeof json.error === 'object' ? (json.error.message || JSON.stringify(json.error)) : json.error;
                 setProgress(`API Error: ${errorMsg}`, false);
                 dom.recordBtn.disabled = false;
@@ -243,7 +242,7 @@
     dom.genBtn.onclick = async () => {
       const text = dom.transcript.value.trim();
       if (!text) return alert("Transcript is empty!");
-      
+
       dom.genBtn.disabled = true;
       setProgress("Analyzing transcript on the cloud...", true);
 
@@ -253,14 +252,14 @@
           body: JSON.stringify({ action: 'analyze', transcript: text }),
         });
         const data = await res.json();
-        
+
         if (data.error) {
            const errorMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : data.error;
            throw new Error(errorMsg);
         }
 
         generatedData = data.result;
-        
+
         // Populate UI
         const soap = generatedData.SOAP || {};
         document.getElementById('soap1').innerText = soap["1_Signalment_Core_Disease_Category"] || "None";
@@ -269,7 +268,7 @@
         document.getElementById('soap567').innerText = soap["5_6_7_Diagnostics"] || "None";
         document.getElementById('soap89').innerText = soap["8_9_Plan"] || "None";
         document.getElementById('soap1011').innerText = soap["10_11_Takeaways_Differentiation"] || "None";
-        
+
         let instList = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions : [generatedData.ClientInstructions];
         document.getElementById('instructionsText').innerText = instList.length > 0 ? instList.map(i => `• ${i}`).join('\n\n') : "No specific instructions.";
 
@@ -277,7 +276,7 @@
         dom.pdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         dom.emailBtn.disabled = false;
         dom.emailBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        
+
         setProgress("Analysis complete! Saving to database...", false);
         syncToDatabase(generatedData, "save");
         dom.genBtn.disabled = false;
@@ -294,7 +293,7 @@
       document.getElementById('pdfDoctorName').innerText = document.getElementById('doctorName').value || "Unknown Doctor";
       document.getElementById('pdfLocation').innerText = dom.locationInput.value || "Not Specified";
       document.getElementById('pdfDate').innerText = new Date().toLocaleDateString();
-      
+
       const soap = generatedData ? (generatedData.SOAP || {}) : {};
       document.getElementById('pdf1').innerText = soap["1_Signalment_Core_Disease_Category"] || "";
       document.getElementById('pdf23').innerText = soap["2_3_History"] || "";
@@ -302,7 +301,7 @@
       document.getElementById('pdf567').innerText = soap["5_6_7_Diagnostics"] || "";
       document.getElementById('pdf89').innerText = soap["8_9_Plan"] || "";
       document.getElementById('pdf1011').innerText = soap["10_11_Takeaways_Differentiation"] || "";
-      
+
       const inst = generatedData && Array.isArray(generatedData.ClientInstructions) 
           ? generatedData.ClientInstructions.map(i => `• ${i}`).join('\n\n') 
           : "No specific instructions provided.";
@@ -328,7 +327,7 @@
           method: 'POST',
           body: JSON.stringify(payload)
         });
-        
+
         if (res.ok) setProgress(actionType === "email" ? "Email Sent!" : "Saved to conversation log!", false);
       } catch (err) {
         setProgress(`Sync status: ${err.message}`, false);
@@ -339,7 +338,7 @@
     dom.emailBtn.onclick = async () => {
       const email = document.getElementById('patientEmail').value;
       if (!email) return alert("Enter patient email first!");
-      
+
       dom.emailBtn.innerText = "Sending...";
       dom.emailBtn.disabled = true;
 
