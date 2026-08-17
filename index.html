@@ -398,22 +398,36 @@
       const { PDFDocument, rgb, StandardFonts } = PDFLib;
       let pdfDoc;
 
-      // 1. Load the existing letterhead (Protective Wrapper)
+      // 1. Load or create document container
       if (!letterheadSrc) {
         pdfDoc = await PDFDocument.create();
         pdfDoc.addPage([595.28, 841.89]);
       } else {
-        const assetBytes = await fetch(letterheadSrc).then(res => res.arrayBuffer());
+        const res = await fetch(letterheadSrc);
+        if (!res.ok) throw new Error(`Failed to load letterhead asset (Status: ${res.status})`);
+        
+        const assetBytes = await res.arrayBuffer();
+
         try {
-          // If the asset is a pure PDF:
+          // First attempt: Load as standard PDF
           pdfDoc = await PDFDocument.load(assetBytes);
         } catch (e) {
-          // If the asset is an Image (legacy fallback), embed it as background:
+          // Second attempt: Treat as image background
           pdfDoc = await PDFDocument.create();
           const page = pdfDoc.addPage([595.28, 841.89]);
-          let bgImage = letterheadSrc.includes('png') || letterheadSrc.includes('image/png') 
-            ? await pdfDoc.embedPng(assetBytes) 
-            : await pdfDoc.embedJpg(assetBytes);
+          let bgImage;
+
+          // Smart Image Type Detection (Tries PNG first, falls back to JPG)
+          try {
+            bgImage = await pdfDoc.embedPng(assetBytes);
+          } catch (pngErr) {
+            try {
+              bgImage = await pdfDoc.embedJpg(assetBytes);
+            } catch (jpgErr) {
+              throw new Error("Selected letterhead image is not a valid PNG or JPEG.");
+            }
+          }
+
           page.drawImage(bgImage, { x: 0, y: 0, width: 595.28, height: 841.89 });
         }
       }
