@@ -64,22 +64,39 @@
       pointer-events: none;
       width: 800px;
     }
+
+    /* Custom Select Arrow Styling */
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px top 50%;
+      background-size: 10px auto;
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 font-sans selection:bg-indigo-500/30">
 
   <div class="max-w-5xl mx-auto space-y-6">
-    
+
     <!-- Settings Section -->
     <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/60 rounded-2xl p-6 shadow-xl w-full transition-all">
       <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Settings & Patient Info</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <input type="text" id="clinicName" placeholder="Clinic / Hospital Name" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80" value="General Hospital">
+        
+        <!-- CHANGED: Dropdown for clinic selection -->
+        <select id="clinicName" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80 cursor-pointer">
+          <option value="General Hospital">General Hospital</option>
+          <option value="City Care Clinic">City Care Clinic</option>
+          <option value="Sunrise Medical">Sunrise Medical</option>
+        </select>
+
         <input type="text" id="manualLocation" placeholder="Location (e.g. City, Region)" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80">
         <input type="text" id="doctorName" placeholder="Provider Name" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80" value="Dr. John Doe">
         <input type="email" id="patientEmail" placeholder="Patient Email Address" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80">
-        <!-- New Letterhead Upload -->
-        <input type="file" id="letterheadUpload" accept="image/*" title="Upload Letterhead / Logo" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+        
+        <!-- Letterhead Upload (Still functions to override default dropdown letterheads) -->
+        <input type="file" id="letterheadUpload" accept="image/*" title="Upload Custom Letterhead / Logo (Overrides Dropdown)" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
       </div>
     </div>
 
@@ -132,7 +149,7 @@
 
     <!-- Output Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="reportUI">
-      
+
       <div id="soapCard" class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5 transition-all">
         <div class="flex justify-between items-end border-b border-slate-700/60 pb-3">
           <h2 class="text-sm font-bold uppercase tracking-wider text-indigo-400">Clinical Analysis</h2>
@@ -158,16 +175,15 @@
     </div>
   </div>
 
-  <!-- Hidden PDF Templates (Positioned properly for html2canvas rendering) -->
+  <!-- Hidden PDF Templates -->
   <div class="pdf-render-zone">
-    
+
     <!-- PDF 1: Consultation Report -->
     <div id="pdfTemplateReport" class="bg-white text-black p-10 w-[800px]">
-      <!-- Dynamic Letterhead -->
       <div id="pdf1LetterheadContainer" class="mb-6 text-center" style="display: none;">
         <img id="pdf1Letterhead" src="" style="max-height: 120px; max-width: 100%; object-fit: contain; margin: 0 auto;">
       </div>
-      
+
       <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
         <div>
           <h1 class="text-3xl font-bold text-slate-900" id="pdf1ClinicName">Clinic Name</h1>
@@ -193,7 +209,6 @@
 
     <!-- PDF 2: Discharge Instructions -->
     <div id="pdfTemplateInstructions" class="bg-white text-black p-10 w-[800px]">
-      <!-- Dynamic Letterhead -->
       <div id="pdf2LetterheadContainer" class="mb-6 text-center" style="display: none;">
         <img id="pdf2Letterhead" src="" style="max-height: 120px; max-width: 100%; object-fit: contain; margin: 0 auto;">
       </div>
@@ -222,10 +237,22 @@
     // ==========================================
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhmBTR8cQ9S7QlNN2dmPxgLEWEsFCooJtwCmy8lu45-Zrpwn3ysOUiB-1oab2zeJiQdA/exec";
 
+    // ==========================================
+    // CLINIC LETTERHEADS MAP (Base64 or URLs)
+    // Replace the strings below with your real Clinic Logos Base64 Data URIs
+    // ==========================================
+    const clinicLetterheads = {
+      "General Hospital": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMTAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y4ZmFmYyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMxZTI5M2IiPkdlbmVyYWwgSG9zcGl0YWwgTGV0dGVyaGVhZDwvdGV4dD48L3N2Zz4=", 
+      "City Care Clinic": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMTAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZmRmNCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMxNjY1MzQiPkNpdHkgQ2FyZSBDbGluaWMgTGV0dGVyaGVhZDwvdGV4dD48L3N2Zz4=", 
+      "Sunrise Medical": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMTAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmZjdlZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM5YTM0MTIiPlN1bnJpc2UgTWVkaWNhbCBMZXR0ZXJoZWFkPC90ZXh0Pjwvc3ZnPg==" 
+    };
+
     let mediaRecorder = null;
     let audioChunks = [];
     let generatedData = null;
-    let letterheadBase64 = ""; // Stores the uploaded image
+    
+    // Set initial letterhead based on the default selected option
+    let letterheadBase64 = clinicLetterheads[document.getElementById('clinicName').value] || ""; 
 
     const dom = {
       statusText: document.getElementById('statusText'),
@@ -237,6 +264,7 @@
       genBtn: document.getElementById('generateBtn'),
       pdfBtn: document.getElementById('downloadPdfBtn'),
       emailBtn: document.getElementById('emailBtn'),
+      clinicSelect: document.getElementById('clinicName'),
       locationInput: document.getElementById('manualLocation'),
       warningsCard: document.getElementById('aiWarningsCard'),
       warningsList: document.getElementById('aiWarningsList'),
@@ -256,17 +284,26 @@
       show ? dom.progress.classList.remove('hidden') : dom.progress.classList.add('hidden');
     }
 
-    // --- Letterhead Logic ---
+    // --- Clinic Dropdown Logic ---
+    dom.clinicSelect.addEventListener('change', (e) => {
+      // Update letterhead variable when a new clinic is selected
+      letterheadBase64 = clinicLetterheads[e.target.value] || "";
+      // Reset the manual file input if they had something uploaded to avoid confusion
+      dom.letterheadInput.value = ""; 
+    });
+
+    // --- Manual Letterhead Upload Logic ---
     dom.letterheadInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = function(event) {
-          letterheadBase64 = event.target.result;
+          letterheadBase64 = event.target.result; // Custom upload overrides clinic dropdown
         }
         reader.readAsDataURL(file);
       } else {
-        letterheadBase64 = "";
+        // If file input is cleared, revert to the currently selected clinic's default letterhead
+        letterheadBase64 = clinicLetterheads[dom.clinicSelect.value] || "";
       }
     });
 
@@ -422,12 +459,12 @@
 
     // --- PDF Template Population ---
     function populatePdfTemplates() {
-      const clinic = document.getElementById('clinicName').value || "Unknown Clinic";
+      const clinic = dom.clinicSelect.value || "Unknown Clinic";
       const doctor = document.getElementById('doctorName').value || "Unknown Doctor";
       const loc = dom.locationInput.value || "Not Specified";
       const date = new Date().toLocaleDateString();
 
-      // Handle Letterhead Injection
+      // Handle Letterhead Injection (Now powered by Dropdown or Manual upload)
       if (letterheadBase64) {
         document.getElementById('pdf1Letterhead').src = letterheadBase64;
         document.getElementById('pdf1LetterheadContainer').style.display = 'block';
@@ -467,7 +504,7 @@
           action: actionType,
           timestamp: new Date().toISOString(),
           Location: dom.locationInput.value || "Not Specified",
-          clinicName: document.getElementById('clinicName').value || "Unknown Clinic",
+          clinicName: dom.clinicSelect.value || "Unknown Clinic",
           doctorName: document.getElementById('doctorName').value || "Unknown Doctor",
           patientEmail: document.getElementById('patientEmail').value || "",
           SOAP: data ? data.SOAP : {},
@@ -497,9 +534,9 @@
 
       try {
         populatePdfTemplates();
-        
+
         let reportPdfBase64 = await html2pdf().set({ ...pdfOptions, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).outputPdf('datauristring');
-        
+
         let instructionsPdfBase64 = null;
         const currentInstText = document.getElementById('instructionsText').innerText;
         if (currentInstText && !currentInstText.startsWith("N/A")) {
@@ -522,10 +559,10 @@
     dom.pdfBtn.onclick = async () => {
       if (!generatedData) return;
       populatePdfTemplates();
-      
+
       // Download Report PDF using explicit rendering options
       await html2pdf().set({ ...pdfOptions, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).save();
-      
+
       // Download Instructions PDF only if applicable
       const currentInstText = document.getElementById('instructionsText').innerText;
       if (currentInstText && !currentInstText.startsWith("N/A")) {
