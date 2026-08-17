@@ -6,9 +6,7 @@
   <title>Consultation AI Assistant (Cloud Powered)</title>
   <link rel="icon" href="data:,">
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Maintained for legacy structure just in case, added pdf-lib for the new engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 
   <style>
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -34,6 +32,7 @@
     .animate-wave-3 { animation: wave-bars 0.8s infinite ease-in-out 0.3s; }
     .animate-wave-4 { animation: wave-bars 0.8s infinite ease-in-out 0.45s; }
 
+    /* Editable Field Styling */
     [contenteditable="true"] {
       transition: all 0.2s ease-in-out;
       border: 1px solid transparent;
@@ -55,6 +54,7 @@
       box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
     }
 
+    /* PDF Container - Hidden off-screen to allow accurate rendering without edge truncation */
     .pdf-render-zone {
       position: absolute;
       top: -9999px;
@@ -62,9 +62,10 @@
       z-index: -50;
       opacity: 0;
       pointer-events: none;
-      width: 816px;
+      width: 816px; /* Exact width of 8.5in at 96 DPI */
     }
 
+    /* Custom Select Arrow Styling */
     select {
       appearance: none;
       background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
@@ -82,12 +83,17 @@
     <div class="bg-slate-800/80 backdrop-blur-sm border border-slate-700/60 rounded-2xl p-6 shadow-xl w-full transition-all">
       <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Settings & Patient Info</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
+        <!-- Dropdown for clinic selection (Populated dynamically on load) -->
         <select id="clinicName" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80 cursor-pointer">
           <option value="">Loading clinics...</option>
         </select>
+
         <input type="text" id="manualLocation" placeholder="Location (e.g. City, Region)" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80">
         <input type="text" id="doctorName" placeholder="Provider Name" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80" value="Dr. John Doe">
         <input type="email" id="patientEmail" placeholder="Patient Email Address" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500/80">
+
+        <!-- Letterhead Upload (Overrides Dropdown) -->
         <input type="file" id="letterheadUpload" accept="image/*" title="Upload Custom Letterhead / Logo (Overrides Dropdown)" class="w-full bg-slate-900/50 text-sm border border-slate-700/50 rounded-lg p-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
       </div>
     </div>
@@ -167,6 +173,66 @@
     </div>
   </div>
 
+  <!-- Hidden PDF Templates -->
+  <div class="pdf-render-zone">
+
+    <!-- PDF 1: Consultation Report -->
+    <div id="pdfTemplateReport" class="bg-white text-black relative w-[816px] min-h-[1056px]">
+      <!-- Background Full-Page Letterhead -->
+      <img id="pdf1Letterhead" crossorigin="anonymous" src="" class="absolute top-0 left-0 w-full h-full object-cover z-0" style="display: none;">
+
+      <!-- Content (z-10 to overlay on top of letterhead with padding to prevent overlap with top/bottom graphics) -->
+      <div class="relative z-10 px-12 pt-24 pb-24">
+        <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
+          <div class="max-w-[60%]">
+            <h1 class="text-3xl font-bold text-slate-900 break-words" id="pdf1ClinicName">Clinic Name</h1>
+            <h2 class="text-lg text-slate-700 mt-1" id="pdf1DoctorName">Doctor Name</h2>
+          </div>
+          <div class="text-right text-sm text-slate-500 max-w-[35%]">
+            <p id="pdf1Location" class="break-words">Location</p>
+            <p id="pdf1Date">Date</p>
+          </div>
+        </div>
+        <div class="mb-6">
+          <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-2 pb-1">Clinical SOAP Report</h3>
+          <div class="text-sm space-y-4 leading-relaxed">
+            <p><strong>1. Signalment & Core(Disease Category):</strong> <span id="pdf1_s1" class="whitespace-pre-wrap"></span></p>
+            <p><strong>2 & 3. History:</strong> <span id="pdf1_s23" class="whitespace-pre-wrap"></span></p>
+            <p><strong>4. Findings:</strong> <span id="pdf1_s4" class="whitespace-pre-wrap"></span></p>
+            <p><strong>5, 6, & 7. Diagnostics:</strong> <span id="pdf1_s567" class="whitespace-pre-wrap"></span></p>
+            <p><strong>8 & 9. Plan:</strong> <span id="pdf1_s89" class="whitespace-pre-wrap"></span></p>
+            <p><strong>10 & 11. Takeaways/Differentiation:</strong> <span id="pdf1_s1011" class="whitespace-pre-wrap"></span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDF 2: Discharge Instructions -->
+    <div id="pdfTemplateInstructions" class="bg-white text-black relative w-[816px] min-h-[1056px]">
+      <!-- Background Full-Page Letterhead -->
+      <img id="pdf2Letterhead" crossorigin="anonymous" src="" class="absolute top-0 left-0 w-full h-full object-cover z-0" style="display: none;">
+
+      <!-- Content (z-10 to overlay on top of letterhead with padding) -->
+      <div class="relative z-10 px-12 pt-24 pb-24">
+        <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
+          <div class="max-w-[60%]">
+            <h1 class="text-3xl font-bold text-slate-900 break-words" id="pdf2ClinicName">Clinic Name</h1>
+            <h2 class="text-lg text-slate-700 mt-1" id="pdf2DoctorName">Doctor Name</h2>
+          </div>
+          <div class="text-right text-sm text-slate-500 max-w-[35%]">
+            <p id="pdf2Location" class="break-words">Location</p>
+            <p id="pdf2Date">Date</p>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-800 border-b border-slate-300 mb-4 pb-1">Discharge Instructions</h3>
+          <p class="text-sm leading-relaxed whitespace-pre-wrap" id="pdf2Instructions"></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
   <script>
     // ==========================================
     // ⚠️ REPLACE THIS WITH YOUR WEB APP URL
@@ -175,7 +241,7 @@
 
     // Will be populated dynamically from backend mapping
     let clinicLetterheads = {};
-    let letterheadBase64 = ""; 
+    let letterheadBase64 = ""; // Holds the current selected letterhead URL or base64 data
 
     let mediaRecorder = null;
     let audioChunks = [];
@@ -198,6 +264,15 @@
       letterheadInput: document.getElementById('letterheadUpload')
     };
 
+    // Configuration for html2pdf ensuring crisp, accurate rendering and CORS allowance
+    // Note: Margin changed to 0 to prevent right-edge clipping. Internal padding inside the template manages spacing.
+    const pdfOptions = {
+      margin: 0, 
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 816 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
     function setProgress(message, show) {
       dom.statusText.innerText = message;
       show ? dom.progress.classList.remove('hidden') : dom.progress.classList.add('hidden');
@@ -206,20 +281,26 @@
     // --- Dynamic Clinic Fetching on Load ---
     async function loadClinics() {
       try {
-        const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "getLetterheads" }) });
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: "getLetterheads" })
+        });
         const responseData = await res.json();
 
         if (responseData.status === "success" && responseData.data && responseData.data.length > 0) {
-          dom.clinicSelect.innerHTML = ""; 
+          dom.clinicSelect.innerHTML = ""; // Clear loading text
 
           responseData.data.forEach(item => {
+            // Using lh3.googleusercontent.com is a robust bypass for strict Google Drive image CORS in canvas
             clinicLetterheads[item.clinicName] = `https://lh3.googleusercontent.com/d/${item.fileId}`;
+
             const opt = document.createElement('option');
             opt.value = item.clinicName;
             opt.textContent = item.clinicName;
             dom.clinicSelect.appendChild(opt);
           });
 
+          // Set default base64/URL mapping
           letterheadBase64 = clinicLetterheads[dom.clinicSelect.value] || "";
         } else {
           dom.clinicSelect.innerHTML = '<option value="Unknown Clinic">No saved clinics found</option>';
@@ -231,18 +312,25 @@
     }
     window.addEventListener('DOMContentLoaded', loadClinics);
 
+    // --- Clinic Dropdown Logic ---
     dom.clinicSelect.addEventListener('change', (e) => {
+      // Update letterhead variable when a new clinic is selected
       letterheadBase64 = clinicLetterheads[e.target.value] || "";
+      // Reset the manual file input if they had something uploaded to avoid confusion
       dom.letterheadInput.value = ""; 
     });
 
+    // --- Manual Letterhead Upload Logic ---
     dom.letterheadInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = function(event) { letterheadBase64 = event.target.result; }
+        reader.onload = function(event) {
+          letterheadBase64 = event.target.result; // Custom upload overrides clinic dropdown
+        }
         reader.readAsDataURL(file);
       } else {
+        // If file input is cleared, revert to the currently selected clinic's default letterhead
         letterheadBase64 = clinicLetterheads[dom.clinicSelect.value] || "";
       }
     });
@@ -342,6 +430,7 @@
 
         generatedData = data.result;
 
+        // Populate SOAP fields
         const soap = generatedData.SOAP || {};
         document.getElementById('soap1').innerText = soap["1_Signalment_Core_Disease_Category"] || "Not reported";
         document.getElementById('soap23').innerText = soap["2_3_History"] || "Unremarkable";
@@ -350,6 +439,7 @@
         document.getElementById('soap89').innerText = soap["8_9_Plan"] || "None documented";
         document.getElementById('soap1011').innerText = soap["10_11_Takeaways_Differentiation"] || "None documented";
 
+        // Handle Instructions & Deceased Patient logic
         let instList = Array.isArray(generatedData.ClientInstructions) ? generatedData.ClientInstructions : (generatedData.ClientInstructions ? [generatedData.ClientInstructions] : []);
         instList = instList.filter(i => i && i.trim() !== "");
 
@@ -359,6 +449,7 @@
           document.getElementById('instructionsText').innerText = "N/A — Patient deceased or no discharge instructions required.";
         }
 
+        // Handle Intelligence Warnings
         if (generatedData.Warnings && Array.isArray(generatedData.Warnings) && generatedData.Warnings.length > 0 && generatedData.Warnings[0] !== "") {
           dom.warningsList.innerHTML = generatedData.Warnings.map(w => `<li>${w}</li>`).join('');
           dom.warningsCard.classList.remove('hidden');
@@ -379,6 +470,7 @@
       }
     };
 
+    // Helper: Retrieve edited data directly from the DOM
     function getEditedData() {
       return {
         SOAP: {
@@ -393,125 +485,47 @@
       };
     }
 
-    // --- NEW PDF-LIB ENGINE ---
-    async function generatePerfectPdf(docTitle, docData, letterheadSrc) {
-      const { PDFDocument, rgb, StandardFonts } = PDFLib;
-      let pdfDoc;
+    // --- PDF Template Population ---
+    function populatePdfTemplates() {
+      const clinic = dom.clinicSelect.value || "Unknown Clinic";
+      const doctor = document.getElementById('doctorName').value || "Unknown Doctor";
+      const loc = dom.locationInput.value || "Not Specified";
+      const date = new Date().toLocaleDateString();
 
-      // 1. Load or create document container
-      if (!letterheadSrc) {
-        pdfDoc = await PDFDocument.create();
-        pdfDoc.addPage([595.28, 841.89]);
+      // Handle Letterhead Injection as a background image
+      if (letterheadBase64) {
+        document.getElementById('pdf1Letterhead').src = letterheadBase64;
+        document.getElementById('pdf1Letterhead').style.display = 'block';
+        document.getElementById('pdf2Letterhead').src = letterheadBase64;
+        document.getElementById('pdf2Letterhead').style.display = 'block';
       } else {
-        const res = await fetch(letterheadSrc);
-        if (!res.ok) throw new Error(`Failed to load letterhead asset (Status: ${res.status})`);
-        
-        const assetBytes = await res.arrayBuffer();
-
-        try {
-          // First attempt: Load as standard PDF
-          pdfDoc = await PDFDocument.load(assetBytes);
-        } catch (e) {
-          // Second attempt: Treat as image background
-          pdfDoc = await PDFDocument.create();
-          const page = pdfDoc.addPage([595.28, 841.89]);
-          let bgImage;
-
-          // Smart Image Type Detection (Tries PNG first, falls back to JPG)
-          try {
-            bgImage = await pdfDoc.embedPng(assetBytes);
-          } catch (pngErr) {
-            try {
-              bgImage = await pdfDoc.embedJpg(assetBytes);
-            } catch (jpgErr) {
-              throw new Error("Selected letterhead image is not a valid PNG or JPEG.");
-            }
-          }
-
-          page.drawImage(bgImage, { x: 0, y: 0, width: 595.28, height: 841.89 });
-        }
+        document.getElementById('pdf1Letterhead').style.display = 'none';
+        document.getElementById('pdf2Letterhead').style.display = 'none';
       }
 
-      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      
-      // 2. Define Margins based on image_144420.jpg
-      const PAGE_HEIGHT = 841.89;
-      const PAGE_WIDTH = 595.28;
-      const HEADER_MARGIN = 240; 
-      const FOOTER_MARGIN = 150; 
-      const SIDE_MARGIN = 50;
-      
-      const SAFE_WIDTH = PAGE_WIDTH - (SIDE_MARGIN * 2);
-      const START_Y = PAGE_HEIGHT - HEADER_MARGIN;
-      const END_Y = FOOTER_MARGIN;
-      const FONT_SIZE = 11;
-      const LINE_HEIGHT = FONT_SIZE * 1.5;
+      // Populate Report PDF text (pulling live from DOM to include user edits)
+      document.getElementById('pdf1ClinicName').innerText = clinic;
+      document.getElementById('pdf1DoctorName').innerText = doctor;
+      document.getElementById('pdf1Location').innerText = loc;
+      document.getElementById('pdf1Date').innerText = date;
 
-      let pages = pdfDoc.getPages();
-      let currentPage = pages[0];
-      let currentY = START_Y;
+      document.getElementById('pdf1_s1').innerText = document.getElementById('soap1').innerText;
+      document.getElementById('pdf1_s23').innerText = document.getElementById('soap23').innerText;
+      document.getElementById('pdf1_s4').innerText = document.getElementById('soap4').innerText;
+      document.getElementById('pdf1_s567').innerText = document.getElementById('soap567').innerText;
+      document.getElementById('pdf1_s89').innerText = document.getElementById('soap89').innerText;
+      document.getElementById('pdf1_s1011').innerText = document.getElementById('soap1011').innerText;
 
-      // 3. Helper to wrap text and handle pagination
-      const drawTextBound = async (text, isBold = false) => {
-        const currentFont = isBold ? boldFont : font;
-        const paragraphs = text.split('\n');
-        
-        for (const paragraph of paragraphs) {
-          const words = paragraph.split(' ');
-          let line = '';
+      // Populate Instructions PDF text
+      document.getElementById('pdf2ClinicName').innerText = clinic;
+      document.getElementById('pdf2DoctorName').innerText = doctor;
+      document.getElementById('pdf2Location').innerText = loc;
+      document.getElementById('pdf2Date').innerText = date;
 
-          for (let i = 0; i < words.length; i++) {
-            const testLine = line + words[i] + ' ';
-            const textWidth = currentFont.widthOfTextAtSize(testLine, FONT_SIZE);
-
-            if (textWidth > SAFE_WIDTH && i > 0) {
-              currentPage.drawText(line.trim(), {
-                x: SIDE_MARGIN, y: currentY, size: FONT_SIZE, font: currentFont, color: rgb(0.2, 0.2, 0.2),
-              });
-              
-              line = words[i] + ' ';
-              currentY -= LINE_HEIGHT;
-
-              if (currentY < END_Y) {
-                const [copiedPage] = await pdfDoc.copyPages(pdfDoc, [0]);
-                pdfDoc.addPage(copiedPage);
-                pages = pdfDoc.getPages();
-                currentPage = pages[pages.length - 1];
-                currentY = START_Y; 
-              }
-            } else {
-              line = testLine;
-            }
-          }
-
-          if (line.trim().length > 0) {
-            currentPage.drawText(line.trim(), {
-              x: SIDE_MARGIN, y: currentY, size: FONT_SIZE, font: currentFont, color: rgb(0.2, 0.2, 0.2),
-            });
-            currentY -= LINE_HEIGHT;
-          }
-          currentY -= (LINE_HEIGHT / 2); 
-        }
-      };
-
-      // 4. Map the data onto the layout engine
-      await drawTextBound(docTitle, true);
-      currentY -= LINE_HEIGHT; 
-
-      for (const [key, value] of Object.entries(docData)) {
-        if (value) {
-          const formattedKey = key.replace(/_/g, ' ') + ":";
-          await drawTextBound(formattedKey, true);
-          await drawTextBound(value, false);
-          currentY -= LINE_HEIGHT; 
-        }
-      }
-
-      // 5. Export for backend / download
-      return await pdfDoc.saveAsBase64({ dataUri: true }); 
+      document.getElementById('pdf2Instructions').innerText = document.getElementById('instructionsText').innerText;
     }
 
+    // --- Backend Sync ---
     async function syncToDatabase(data, actionType, reportPdfBase64 = null, instructionsPdfBase64 = null) {
       try {
         const payload = {
@@ -538,7 +552,7 @@
       }
     }
 
-    // --- Actions: Email & Download (Wired to pdf-lib) ---
+    // --- Actions: Email & Download ---
     dom.emailBtn.onclick = async () => {
       const email = document.getElementById('patientEmail').value;
       if (!email) return alert("Enter patient email first!");
@@ -547,21 +561,14 @@
       dom.emailBtn.disabled = true;
 
       try {
-        const headerInfo = {
-          "Clinic": dom.clinicSelect.value || "Unknown Clinic",
-          "Provider": document.getElementById('doctorName').value || "Unknown Provider",
-          "Location": dom.locationInput.value || "Not Specified",
-          "Date": new Date().toLocaleDateString()
-        };
+        populatePdfTemplates();
 
-        const soapDataWithHeader = { ...headerInfo, ...getEditedData().SOAP };
-        let reportPdfBase64 = await generatePerfectPdf("Clinical SOAP Report", soapDataWithHeader, letterheadBase64);
+        let reportPdfBase64 = await html2pdf().set({ ...pdfOptions, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).outputPdf('datauristring');
 
         let instructionsPdfBase64 = null;
         const currentInstText = document.getElementById('instructionsText').innerText;
         if (currentInstText && !currentInstText.startsWith("N/A")) {
-          const instData = { ...headerInfo, "Instructions": currentInstText };
-          instructionsPdfBase64 = await generatePerfectPdf("Discharge Instructions", instData, letterheadBase64);
+          instructionsPdfBase64 = await html2pdf().set({ ...pdfOptions, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).outputPdf('datauristring');
         }
 
         await syncToDatabase(getEditedData(), "email", reportPdfBase64, instructionsPdfBase64);
@@ -579,32 +586,16 @@
 
     dom.pdfBtn.onclick = async () => {
       if (!generatedData) return;
-      
-      const headerInfo = {
-        "Clinic": dom.clinicSelect.value || "Unknown Clinic",
-        "Provider": document.getElementById('doctorName').value || "Unknown Provider",
-        "Location": dom.locationInput.value || "Not Specified",
-        "Date": new Date().toLocaleDateString()
-      };
+      populatePdfTemplates();
 
-      const downloadBase64Pdf = (base64String, filename) => {
-        const link = document.createElement('a');
-        link.href = base64String;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-
-      const soapDataWithHeader = { ...headerInfo, ...getEditedData().SOAP };
-      let reportPdfBase64 = await generatePerfectPdf("Clinical SOAP Report", soapDataWithHeader, letterheadBase64);
-      downloadBase64Pdf(reportPdfBase64, 'Consultation_Report.pdf');
+      // Download Report PDF using explicit rendering options
+      await html2pdf().set({ ...pdfOptions, filename: 'Consultation_Report.pdf' }).from(document.getElementById('pdfTemplateReport')).save();
 
       const currentInstText = document.getElementById('instructionsText').innerText;
       if (currentInstText && !currentInstText.startsWith("N/A")) {
-        const instData = { ...headerInfo, "Instructions": currentInstText };
-        let instructionsPdfBase64 = await generatePerfectPdf("Discharge Instructions", instData, letterheadBase64);
-        downloadBase64Pdf(instructionsPdfBase64, 'Discharge_Instructions.pdf');
+        setTimeout(async () => {
+          await html2pdf().set({ ...pdfOptions, filename: 'Discharge_Instructions.pdf' }).from(document.getElementById('pdfTemplateInstructions')).save();
+        }, 1000); 
       }
     };
   </script>
