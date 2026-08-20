@@ -397,6 +397,8 @@
     async function generatePerfectPdf(docTitle, docData, letterheadSrc) {
       const { PDFDocument, rgb, StandardFonts } = PDFLib;
       let pdfDoc;
+      let templateDoc = null; 
+      let bgImage = null;
 
       // 1. Load or create document container
       if (!letterheadSrc) {
@@ -405,17 +407,18 @@
       } else {
         const res = await fetch(letterheadSrc);
         if (!res.ok) throw new Error(`Failed to load letterhead asset (Status: ${res.status})`);
-        
+
         const assetBytes = await res.arrayBuffer();
 
         try {
           // First attempt: Load as standard PDF
           pdfDoc = await PDFDocument.load(assetBytes);
+          // NEW: Keep a pristine, untouched copy for generating subsequent pages
+          templateDoc = await PDFDocument.load(assetBytes);
         } catch (e) {
           // Second attempt: Treat as image background
           pdfDoc = await PDFDocument.create();
           const page = pdfDoc.addPage([595.28, 841.89]);
-          let bgImage;
 
           // Smart Image Type Detection (Tries PNG first, falls back to JPG)
           try {
@@ -434,14 +437,14 @@
 
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      
+
       // 2. Define Margins based on image_144420.jpg
       const PAGE_HEIGHT = 841.89;
       const PAGE_WIDTH = 595.28;
       const HEADER_MARGIN = 240; 
       const FOOTER_MARGIN = 150; 
       const SIDE_MARGIN = 50;
-      
+
       const SAFE_WIDTH = PAGE_WIDTH - (SIDE_MARGIN * 2);
       const START_Y = PAGE_HEIGHT - HEADER_MARGIN;
       const END_Y = FOOTER_MARGIN;
@@ -452,11 +455,27 @@
       let currentPage = pages[0];
       let currentY = START_Y;
 
+      // NEW: Helper to cleanly add a new page using the pristine template
+      const addNewPage = async () => {
+        if (templateDoc) {
+          const [copiedPage] = await pdfDoc.copyPages(templateDoc, [0]);
+          pdfDoc.addPage(copiedPage);
+        } else {
+          const newPage = pdfDoc.addPage([595.28, 841.89]);
+          if (bgImage) {
+            newPage.drawImage(bgImage, { x: 0, y: 0, width: 595.28, height: 841.89 });
+          }
+        }
+        pages = pdfDoc.getPages();
+        currentPage = pages[pages.length - 1];
+        currentY = START_Y;
+      };
+
       // 3. Helper to wrap text and handle pagination
       const drawTextBound = async (text, isBold = false) => {
         const currentFont = isBold ? boldFont : font;
         const paragraphs = text.split('\n');
-        
+
         for (const paragraph of paragraphs) {
           const words = paragraph.split(' ');
           let line = '';
@@ -466,26 +485,26 @@
             const textWidth = currentFont.widthOfTextAtSize(testLine, FONT_SIZE);
 
             if (textWidth > SAFE_WIDTH && i > 0) {
+              if (currentY < END_Y) {
+                await addNewPage(); // Correctly triggers new page BEFORE bounds break
+              }
+
               currentPage.drawText(line.trim(), {
                 x: SIDE_MARGIN, y: currentY, size: FONT_SIZE, font: currentFont, color: rgb(0.2, 0.2, 0.2),
               });
-              
+
               line = words[i] + ' ';
               currentY -= LINE_HEIGHT;
-
-              if (currentY < END_Y) {
-                const [copiedPage] = await pdfDoc.copyPages(pdfDoc, [0]);
-                pdfDoc.addPage(copiedPage);
-                pages = pdfDoc.getPages();
-                currentPage = pages[pages.length - 1];
-                currentY = START_Y; 
-              }
             } else {
               line = testLine;
             }
           }
 
           if (line.trim().length > 0) {
+            if (currentY < END_Y) {
+              await addNewPage(); 
+            }
+
             currentPage.drawText(line.trim(), {
               x: SIDE_MARGIN, y: currentY, size: FONT_SIZE, font: currentFont, color: rgb(0.2, 0.2, 0.2),
             });
@@ -496,12 +515,14 @@
       };
 
       // 4. Map the data onto the layout engine
+      if (currentY < END_Y) await addNewPage();
       await drawTextBound(docTitle, true);
       currentY -= LINE_HEIGHT; 
 
       for (const [key, value] of Object.entries(docData)) {
         if (value) {
           const formattedKey = key.replace(/_/g, ' ') + ":";
+          if (currentY < END_Y) await addNewPage();
           await drawTextBound(formattedKey, true);
           await drawTextBound(value, false);
           currentY -= LINE_HEIGHT; 
@@ -579,7 +600,7 @@
 
     dom.pdfBtn.onclick = async () => {
       if (!generatedData) return;
-      
+
       const headerInfo = {
         "Clinic": dom.clinicSelect.value || "Unknown Clinic",
         "Provider": document.getElementById('doctorName').value || "Unknown Provider",
