@@ -547,9 +547,10 @@
             }
 
             // 2. Define Margins to ensure text stays in the "editable" middle band
-            const topMargin = 150;     // Space for the top header graphics
-            const bottomMargin = 100;  // Space for the bottom footer graphics
-            const sideMargin = 50;
+            // MASSIVELY INCREASED MARGINS to clear the tall header and footer graphics in image_9fe2f5.png
+            const topMargin = 280;     // Space for the tall top header graphic
+            const bottomMargin = 160;  // Space for the tall bottom footer graphic
+            const sideMargin = 60;     // Slightly wider side margin for a cleaner central look
 
             let page = pdfDoc.addPage();
             const { width, height } = page.getSize();
