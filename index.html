@@ -63,33 +63,14 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-0 md:p-8">
+<body class="min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
 
-    <div class="w-full h-screen md:h-auto md:max-w-7xl bg-white md:rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-gray-100 relative">
-
-        <!-- Mobile Header Bar -->
-        <div class="md:hidden flex items-center justify-between p-4 bg-[#0b1f3f] text-white z-30 shrink-0 shadow-md">
-            <div class="flex items-center gap-3">
-                <i class="fa-solid fa-pen-nib text-blue-400"></i>
-                <span class="font-bold text-base tracking-wide">CliniScribe AI</span>
-            </div>
-            <button id="mobileMenuBtn" class="p-2 rounded-lg bg-white/10 text-gray-200 hover:text-white focus:outline-none transition-colors" aria-label="Open menu">
-                <i class="fa-solid fa-bars text-lg"></i>
-            </button>
-        </div>
-
-        <!-- Mobile Backdrop -->
-        <div id="mobileBackdrop" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity backdrop-blur-sm"></div>
+    <div class="w-full max-w-7xl bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-gray-100">
 
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 bg-[#0b1f3f] text-white flex flex-col justify-between p-5 shrink-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+        <aside class="w-full md:w-64 bg-[#0b1f3f] text-white flex flex-col justify-between p-5 shrink-0">
             <div>
-                <div class="flex items-center justify-between mb-8">
-                    <div class="text-xs font-semibold tracking-wider text-blue-300 uppercase">KYNKODE</div>
-                    <button id="closeMenuBtn" class="md:hidden text-gray-400 hover:text-white p-2 -mr-2 rounded-lg hover:bg-white/10 transition-colors">
-                        <i class="fa-solid fa-xmark text-xl"></i>
-                    </button>
-                </div>
+                <div class="text-xs font-semibold tracking-wider text-blue-300 uppercase mb-8">KYNKODE</div>
                 <nav class="space-y-1">
                     <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-white/10 transition">
                         <i class="fa-solid fa-house w-5"></i><span class="font-medium text-sm">Dashboard</span>
@@ -120,14 +101,14 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-1 p-4 md:p-8 bg-[#f8fafc] flex flex-col gap-6 relative overflow-y-auto md:max-h-[90vh]">
+        <main class="flex-1 p-6 md:p-8 bg-[#f8fafc] flex flex-col gap-6 relative overflow-y-auto max-h-[90vh]">
             
             <div id="progressBarContainer" class="absolute top-0 left-0 w-full h-1 bg-gray-200 overflow-hidden hidden">
                 <div class="h-full w-full animate-shimmer"></div>
             </div>
 
-            <!-- Top Header (Hidden on Mobile to avoid duplication) -->
-            <header class="hidden md:flex items-center justify-between gap-3">
+            <!-- Top Header -->
+            <header class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <div class="bg-blue-600 text-white p-2.5 rounded-2xl shadow-md flex items-center justify-center">
                         <i class="fa-solid fa-pen-nib text-xl"></i>
@@ -138,11 +119,6 @@
                     </div>
                 </div>
             </header>
-
-            <!-- Status Indicator for Mobile -->
-            <div class="md:hidden flex items-center justify-between bg-blue-50 border border-blue-100 p-3 rounded-xl">
-                <p id="mobileStatusText" class="text-xs text-blue-600 font-medium">System ready. Waiting for input...</p>
-            </div>
 
             <!-- Top Grid: Live Scribe & Patient Information -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -320,53 +296,15 @@
                     </button>
                 </div>
             </section>
-            
-            <footer class="mt-6 pb-6 text-center text-xs text-blue-900/60 font-medium">
-                CliniScribe saves time, improves accuracy and keeps every record complete.
-            </footer>
         </main>
     </div>
 
+    <footer class="mt-6 text-center text-xs text-blue-900 font-medium">
+        CliniScribe saves time, improves accuracy and keeps every record complete.
+    </footer>
+
     <!-- App Logic Script -->
     <script>
-        // ==========================================
-        // MOBILE MENU LOGIC
-        // ==========================================
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const closeMenuBtn = document.getElementById('closeMenuBtn');
-        const sidebar = document.getElementById('sidebar');
-        const mobileBackdrop = document.getElementById('mobileBackdrop');
-        let isMobileMenuOpen = false;
-
-        function toggleMobileMenu(forceState) {
-            isMobileMenuOpen = typeof forceState === 'boolean' ? forceState : !isMobileMenuOpen;
-            
-            if (isMobileMenuOpen) {
-                sidebar.classList.remove('-translate-x-full');
-                mobileBackdrop.classList.remove('hidden');
-                document.body.style.overflow = 'hidden'; // Prevent scrolling underneath
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                mobileBackdrop.classList.add('hidden');
-                document.body.style.overflow = 'unset';
-            }
-        }
-
-        mobileMenuBtn.addEventListener('click', () => toggleMobileMenu(true));
-        closeMenuBtn.addEventListener('click', () => toggleMobileMenu(false));
-        mobileBackdrop.addEventListener('click', () => toggleMobileMenu(false));
-
-        // Close menu on nav link click (mobile)
-        document.querySelectorAll('#sidebar nav a').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth < 768) toggleMobileMenu(false);
-            });
-        });
-
-
-        // ==========================================
-        // APPLICATION LOGIC
-        // ==========================================
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwzP1vzgTNPHx_UV5PwpA8h7kkGmULFlhNUOfmY3kDLpzQr7aGfHCo62W6tKtMYDsVEcg/exec";
 
         let clinicLetterheads = {};
@@ -379,7 +317,6 @@
 
         const dom = {
             statusText: document.getElementById('statusText'),
-            mobileStatusText: document.getElementById('mobileStatusText'),
             sidebarStatusIcon: document.getElementById('sidebarStatusIcon'),
             sidebarStatusText: document.getElementById('sidebarStatusText'),
             wave: document.getElementById('audioWave'),
@@ -407,7 +344,6 @@
 
         function setProgress(message, show) {
             dom.statusText.innerText = message;
-            dom.mobileStatusText.innerText = message;
             dom.sidebarStatusText.innerText = show ? "Working..." : message;
             
             if(show) {
@@ -419,6 +355,7 @@
             }
         }
         
+        // Helper to disable/enable all generation buttons at once
         function setGenerateButtonsDisabled(disabledState) {
             dom.genConsultBtn.disabled = disabledState;
             dom.genRadioBtn.disabled = disabledState;
@@ -560,7 +497,7 @@
                     body: JSON.stringify({ 
                         action: 'analyze', 
                         transcript: text,
-                        reportType: requestedReportType 
+                        reportType: requestedReportType // Pass the selected report type to backend
                     }),
                 });
                 const data = await res.json();
@@ -610,6 +547,7 @@
             }
         }
         
+        // Attach click listeners to all new buttons
         dom.genConsultBtn.onclick = () => generateReport("Consultation Report");
         dom.genRadioBtn.onclick = () => generateReport("Radiographic Report");
         dom.genUltraBtn.onclick = () => generateReport("Ultrasound Report");
@@ -631,12 +569,14 @@
             };
         }
 
+        // --- FULL-PAGE LETTERHEAD BACKGROUND LOGIC ---
         async function generatePerfectPdf(docTitle, sections, letterheadSrc) {
             const { PDFDocument, rgb, StandardFonts } = PDFLib;
             const pdfDoc = await PDFDocument.create();
             const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
             const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+            // 1. Embed the letterhead image once
             let bgImage = null;
             if (letterheadSrc && letterheadSrc.trim() !== "") {
                 try {
@@ -658,28 +598,33 @@
                 }
             }
 
-            const topMargin = 280;     
-            const bottomMargin = 160;  
-            const sideMargin = 60;     
+            // 2. Define Margins to ensure text stays in the "editable" middle band
+            // MASSIVELY INCREASED MARGINS to clear the tall header and footer graphics in image_9fe2f5.png
+            const topMargin = 280;     // Space for the tall top header graphic
+            const bottomMargin = 160;  // Space for the tall bottom footer graphic
+            const sideMargin = 60;     // Slightly wider side margin for a cleaner central look
 
             let page = pdfDoc.addPage();
             const { width, height } = page.getSize();
             const usableWidth = width - sideMargin * 2;
             let y = height - topMargin;
 
+            // 3. Helper function to draw background on any new page
             const drawBackground = (targetPage) => {
                 if (bgImage) {
                     targetPage.drawImage(bgImage, {
                         x: 0,
                         y: 0,
-                        width: width,   
-                        height: height, 
+                        width: width,   // Spans full page width
+                        height: height, // Spans full page height
                     });
                 }
             };
 
+            // Draw background on the very first page
             drawBackground(page);
 
+            // Title
             page.drawText(docTitle, { x: sideMargin, y, size: 16, font: boldFont, color: rgb(0.1, 0.2, 0.4) });
             y -= 30;
 
@@ -702,14 +647,16 @@
                 return lines;
             };
 
+            // 4. Update page break logic to trigger before hitting the footer & auto-draw background
             const checkPageBreak = (neededSpace) => {
                 if (y - neededSpace < bottomMargin) {
                     page = pdfDoc.addPage();
                     drawBackground(page);
-                    y = height - topMargin; 
+                    y = height - topMargin; // Reset to just beneath the header
                 }
             };
 
+            // Render Text Sections
             for (const section of sections) {
                 checkPageBreak(40);
                 
@@ -736,6 +683,7 @@
             return await pdfDoc.save();
         }
 
+        // Helper function to safely convert raw PDF bytes to Base64 in the browser
         const convertBlobToBase64 = (blob) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -794,6 +742,7 @@
             dom.pdfBtn.disabled = false;
         };
 
+        // --- Email PDF Button Logic ---
         dom.emailBtn.onclick = async () => {
             const email = document.getElementById('patientEmail').value.trim();
             const clinic = dom.clinicSelect.value;
@@ -807,6 +756,7 @@
             try {
                 const editedData = getEditedData();
 
+                // 1. Generate Medical Report PDF Bytes
                 const medRecordSections = [
                     { title: "Signalment & Core Disease Category", content: editedData.SOAP["Signalment_Core_Disease_Category"] },
                     { title: "History", content: editedData.SOAP["History"] },
@@ -817,11 +767,13 @@
                 ];
                 const medPdfBytes = await generatePerfectPdf(currentReportType, medRecordSections, letterheadBase64);
                 
+                // Convert to Base64 safely via Blob
                 const medBlob = new Blob([medPdfBytes], { type: 'application/pdf' });
                 const reportPdfBase64 = await convertBlobToBase64(medBlob);
                 
                 let instructionsPdfBase64 = null;
 
+                // 2. Conditionally Generate Instructions PDF Bytes
                 const instructionsContent = editedData.ClientInstructions;
                 if (instructionsContent && !instructionsContent.includes("N/A — Patient deceased")) {
                     const clientSections = [
@@ -832,6 +784,7 @@
                     instructionsPdfBase64 = await convertBlobToBase64(clientBlob);
                 }
 
+                // 3. Dispatch to Backend
                 const payload = {
                     action: "email",
                     patientEmail: email,
